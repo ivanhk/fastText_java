@@ -30,16 +30,36 @@ public class FastText {
 	private static Logger logger = Logger.getLogger(FastText.class);
 	private static int SUPERVISED_LABEL_SIZE = 10;
 
-	Args args = new Args();
-	Dictionary dict = new Dictionary(args);
-	Matrix input = new Matrix();
-	Matrix output = new Matrix();
+	public Args args = new Args();
+	public Dictionary dict = new Dictionary(args);
+	public Matrix input = new Matrix();
+	public Matrix output = new Matrix();
 
 	class Info {
 		long start = 0;
 		AtomicLong allWords = new AtomicLong(0l);
 		AtomicLong allN = new AtomicLong(0l);
 		double allLoss = 0.0;
+	}
+
+	public class MutableDouble {
+		private double value;
+
+		public MutableDouble(double value) {
+			this.value = value;
+		}
+
+		public void set(double value) {
+			this.value = value;
+		}
+
+		public double doubleValue() {
+			return value;
+		}
+
+		public void incrementDouble(double value) {
+			this.value += value;
+		}
 	}
 
 	Info info = new Info();
@@ -102,15 +122,15 @@ public class FastText {
 	}
 
 	public int supervised(Model model, final java.util.Vector<Integer> line, final java.util.Vector<Integer> labels,
-			double loss, UniformIntegerDistribution uid) {
+			MutableDouble loss, UniformIntegerDistribution uid) {
 		if (labels.size() == 0 || line.size() == 0)
 			return 0;
 		int i = uid.sample();
-		loss += model.update(line, labels.get(i));
+		loss.incrementDouble(model.update(line, labels.get(i)));
 		return 1;
 	}
 
-	public int cbow(Dictionary dict, Model model, final java.util.Vector<Integer> line, double loss,
+	public int cbow(Dictionary dict, Model model, final java.util.Vector<Integer> line, MutableDouble loss,
 			UniformIntegerDistribution uid) {
 		java.util.Vector<Integer> bow = new java.util.Vector<Integer>();
 		int nexamples = 0;
@@ -123,13 +143,13 @@ public class FastText {
 					bow.addAll(ngrams);
 				}
 			}
-			loss += model.update(bow, line.get(w));
+			loss.incrementDouble(model.update(bow, line.get(w)));
 			nexamples++;
 		}
 		return nexamples;
 	}
 
-	public int skipgram(Dictionary dict, Model model, final java.util.Vector<Integer> line, double loss,
+	public int skipgram(Dictionary dict, Model model, final java.util.Vector<Integer> line, MutableDouble loss,
 			UniformIntegerDistribution uid) {
 		int nexamples = 0;
 		for (int w = 0; w < line.size(); w++) {
@@ -137,7 +157,7 @@ public class FastText {
 			final java.util.Vector<Integer> ngrams = dict.getNgrams(line.get(w));
 			for (int c = -boundary; c <= boundary; c++) {
 				if (c != 0 && w + c >= 0 && w + c < line.size()) {
-					loss += model.update(ngrams, line.get(w + c));
+					loss.incrementDouble(model.update(ngrams, line.get(w + c)));
 					nexamples++;
 				}
 			}
@@ -318,7 +338,7 @@ public class FastText {
 				final long ntokens = dict.ntokens();
 				long tokenCount = 0, /** printCount = 0, */
 						deltaCount = 0;
-				double loss = 0.0;
+				MutableDouble loss = new MutableDouble(0.0);
 				long nexamples = 0;
 
 				java.util.Vector<Integer> line = new java.util.Vector<Integer>();
@@ -371,10 +391,10 @@ public class FastText {
 					}
 					if (tokenCount > args.lrUpdateRate) {
 						info.allWords.addAndGet(tokenCount);
-						info.allLoss += loss;
+						info.allLoss += loss.doubleValue();
 						info.allN.addAndGet(nexamples);
 						tokenCount = 0;
-						loss = 0.0;
+						loss.set(0.0);
 						nexamples = 0;
 						progress = (float) (info.allWords.get()) / (args.epoch * ntokens);
 						model.setLearningRate((float) (args.lr * (1.0 - progress)));
