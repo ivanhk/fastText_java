@@ -320,10 +320,10 @@ public class Dictionary {
 	public void addNgrams(Vector<Integer> line, int n) {
 		int line_size = line.size();
 		for (int i = 0; i < line_size; i++) {
-			int h = line.get(i);
+			long h = Long.valueOf(line.get(i));
 			for (int j = i + 1; j < line_size && j < i + n; j++) {
 				h = h * 116049371 + line.get(j);
-				line.add(nwords_ + (h % args.bucket));
+				line.add(nwords_ + (int)(h % args.bucket));
 			}
 		}
 	}
