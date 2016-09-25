@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.google.gson.JsonObject;
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
 import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.apache.log4j.Logger;
@@ -185,8 +186,9 @@ public class FastText {
 				dict.addNgrams(line, args.wordNgrams);
 				if (labels.size() > 0 && line.size() > 0) {
 					System.out.print("Test line: " + lineString);
-					Float score = null;
-					int i = model.predict(line, score);
+					JsonObject detail = new JsonObject();
+					int i = model.predict(line, detail);
+					logger.info(detail.toString());
 					if (labels.contains(i)) {
 						precision += 1.0;
 						System.out.println(" [HIT]: " + dict.getLabel(i));
@@ -194,8 +196,8 @@ public class FastText {
 						System.out.println(" [MISSED]: " + dict.getLabel(i));
 					}
 					nexamples++;
-					logger.info("Line = " + lineString + "\t" + "predict label = " + dict.getLabel(i) + "\t" +
-							"Score = " + score.toString());
+					//logger.info("Line = " + lineString + "\t" + "predict label = " + dict.getLabel(i) + "\t" +
+					//		"Score = " + score.toString());
 				} else {
 					System.out.println("FAIL Test line: " + lineString + "labels: " + labels + " line: " + line);
 				}
