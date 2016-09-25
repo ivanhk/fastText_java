@@ -185,7 +185,8 @@ public class FastText {
 				dict.addNgrams(line, args.wordNgrams);
 				if (labels.size() > 0 && line.size() > 0) {
 					System.out.print("Test line: " + lineString);
-					int i = model.predict(line);
+					Float score = null;
+					int i = model.predict(line, score);
 					if (labels.contains(i)) {
 						precision += 1.0;
 						System.out.println(" [HIT]: " + dict.getLabel(i));
@@ -193,6 +194,8 @@ public class FastText {
 						System.out.println(" [MISSED]: " + dict.getLabel(i));
 					}
 					nexamples++;
+					logger.info("Line = " + lineString + "\t" + "predict label = " + dict.getLabel(i) + "\t" +
+							"Score = " + score.toString());
 				} else {
 					System.out.println("FAIL Test line: " + lineString + "labels: " + labels + " line: " + line);
 				}

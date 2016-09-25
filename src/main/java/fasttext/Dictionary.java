@@ -224,8 +224,9 @@ public class Dictionary {
 			if (e.subwords == null) {
 				e.subwords = new Vector<Integer>();
 			}
-			e.subwords.add(i);
-			computeNgrams(word, e.subwords);
+			// when it's classification the following init may be not used
+			//e.subwords.add(i);
+			//computeNgrams(word, e.subwords);
 		}
 	}
 
