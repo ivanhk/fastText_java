@@ -75,7 +75,7 @@ public class Args {
 	public int bucket = 2000000;
 	public int minn = 3;
 	public int maxn = 6;
-	public int thread = 12;
+	public int thread = 1;
 	public double t = 1e-4;
 	public String label = "__label__";
 
