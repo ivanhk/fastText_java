@@ -1,5 +1,6 @@
 package fasttext;
 
+import com.google.gson.JsonObject;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.random.Well19937c;
 
@@ -150,10 +151,9 @@ public class Model {
 	/**
 	 * predict with probability
 	 * @param input
-	 * @param score
      * @return
      */
-	public int predict(final java.util.Vector<Integer> input, Float score ) {
+	public int predict(final java.util.Vector<Integer> input, JsonObject detail) {
 		hidden_.zero();
 		for (Integer it : input) {
 			hidden_.addRow(wi_, it);
@@ -184,9 +184,11 @@ public class Model {
 				output_.data_[i] /= z;
 			}
 			int idx = output_.argmax();
-			score = Float.valueOf(output_.data_[idx]);
+
+			detail.addProperty("label_idx", idx);
+			detail.addProperty("prob", (double)output_.data_[idx]);
+			//score = Float.valueOf(output_.data_[idx]);
 			return idx;
-			//return output_.argmax();
 		}
 	}
 
