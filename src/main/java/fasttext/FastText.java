@@ -78,7 +78,7 @@ public class FastText {
 
 			args.load(dis);
 			dict.load(dis);
-			input.load(dis);
+			input.loadNIO(dis);
 			output.load(dis);
 
 			logger.info("loadModel done!");
