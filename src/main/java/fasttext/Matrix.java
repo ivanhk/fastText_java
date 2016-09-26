@@ -1,8 +1,12 @@
 package fasttext;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.FloatBuffer;
+import java.nio.ByteBuffer;
+
 
 import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.apache.commons.math3.random.Well19937c;
@@ -78,11 +82,39 @@ public class Matrix {
 	public void load(InputStream input) throws IOException {
 		m_ = (int) IOUtil.readLong(input);
 		n_ = (int) IOUtil.readLong(input);
+
 		data_ = new float[m_][n_];
 		for (int i = 0; i < m_; i++) {
 			for (int j = 0; j < n_; j++) {
 				data_[i][j] = IOUtil.readFloat(input);
 			}
+		}
+		if (logger.isDebugEnabled()) {
+			logger.debug("Matrix loal m_: " + m_);
+			logger.debug("Matrix loal n_: " + n_);
+			StringBuilder strBuilder = new StringBuilder("line1:");
+			for (int j = 0; j < n_; j++) {
+				strBuilder.append(" ").append(data_[0][j]);
+			}
+			logger.debug(strBuilder.toString());
+		}
+	}
+
+	public void loadNIO(InputStream input) throws IOException {
+		m_ = (int) IOUtil.readLong(input);
+		n_ = (int) IOUtil.readLong(input);
+
+		data_ = new float[m_][n_];
+		for (int i = 0; i < m_; i++) {
+			byte []  buf = new byte[n_ * 4];
+			int nread = input.read(buf);
+			final FloatBuffer fb = ByteBuffer.wrap(buf).asFloatBuffer();
+			fb.get(data_[i]); // Copy the contents of the FloatBuffer into dst
+
+
+			//for (int j = 0; j < n_; j++) {
+			//	data_[i][j] = IOUtil.readFloat(input);
+			//}
 		}
 		if (logger.isDebugEnabled()) {
 			logger.debug("Matrix loal m_: " + m_);

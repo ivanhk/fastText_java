@@ -1,5 +1,6 @@
 package fasttext;
 
+import com.google.gson.JsonObject;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.random.Well19937c;
 
@@ -144,6 +145,50 @@ public class Model {
 		} else {
 			output_.mul(wo_, hidden_);
 			return output_.argmax();
+		}
+	}
+
+	/**
+	 * predict with probability
+	 * @param input
+     * @return
+     */
+	public int predict(final java.util.Vector<Integer> input, JsonObject detail) {
+		hidden_.zero();
+		for (Integer it : input) {
+			hidden_.addRow(wi_, it);
+		}
+		hidden_.mul((float) (1.0 / input.size()));
+
+		if (args.loss == loss_name.hs) {
+			float max = -1e10f;
+			int argmax = -1;
+			dfs(2 * osz_ - 2, 0.0f, max, argmax);
+			return argmax;
+		} else {
+			output_.mul(wo_, hidden_);
+			int max_idx = 0;
+			float max_val = output_.data_[0];
+			for(int i = 1; i < osz_; i ++) {
+				if(output_.data_[i] > max_val) {
+					max_val = output_.data_[i];
+					max_idx = i;
+				}
+			}
+			float z = 0;
+			for(int i = 0; i < osz_; i ++) {
+				output_.data_[i] = (float) Math.exp(output_.data_[i] - max_val);
+				z += output_.data_[i];
+			}
+			for(int i = 0; i < osz_; i ++) {
+				output_.data_[i] /= z;
+			}
+			int idx = output_.argmax();
+
+			detail.addProperty("label_idx", idx);
+			detail.addProperty("prob", (double)output_.data_[idx]);
+			//score = Float.valueOf(output_.data_[idx]);
+			return idx;
 		}
 	}
 
