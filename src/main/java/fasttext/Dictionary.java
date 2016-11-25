@@ -203,7 +203,7 @@ public class Dictionary {
 			}
 			for (int j = i, n = 1; j < word.length() && n <= args.maxn; n++) {
 				ngram.append(word.charAt(j++));
-				while (j < word.length() && charMatches(word.charAt(i))) {
+				while (j < word.length() && charMatches(word.charAt(j))) {
 					ngram.append(word.charAt(j++));
 				}
 				if (n >= args.minn) {
