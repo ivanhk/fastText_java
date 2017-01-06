@@ -13,3 +13,11 @@ $ git clone https://github.com/ivanhk/fastText_java.git
 $ cd fastText_java
 $ mvn package
 ```
+
+## Resources
+
+You can find more information and resources at https://github.com/facebookresearch/fastText
+
+## License
+
+fastText is BSD-licensed. Facebook also provide an additional patent grant.
