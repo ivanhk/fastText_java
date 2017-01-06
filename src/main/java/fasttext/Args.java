@@ -60,14 +60,15 @@ public class Args {
 	}
 
 	public String input;
-	public String test;
 	public String output;
+	public String test;
 	public double lr = 0.05;
 	public int lrUpdateRate = 100;
 	public int dim = 100;
 	public int ws = 5;
 	public int epoch = 5;
 	public int minCount = 5;
+	public int minCountLabel = 0;
 	public int neg = 5;
 	public int wordNgrams = 1;
 	public loss_name loss = loss_name.ns;
@@ -78,6 +79,8 @@ public class Args {
 	public int thread = 1;
 	public double t = 1e-4;
 	public String label = "__label__";
+	public int verbose = 2;
+	public String pretrainedVectors = "";
 
 	public void load(InputStream input) throws IOException {
 		dim = IOUtil.readInt(input);
@@ -116,6 +119,7 @@ public class Args {
 		Options options = new Options();
 		options.addOption(Option.builder("input").desc("training file path").hasArg().required().build());
 		options.addOption(Option.builder("output").desc("output file path").hasArg().required().build());
+		options.addOption(Option.builder("test").desc("test file path").hasArg().build());
 		options.addOption(Option.builder("lr").desc("learning rate[" + lr + "]").hasArg().build());
 		options.addOption(Option.builder("lrUpdateRate")
 				.desc("change the rate of updates for the learning rate [" + lrUpdateRate + "]").hasArg().build());
@@ -124,6 +128,8 @@ public class Args {
 		options.addOption(Option.builder("epoch").desc("number of epochs [" + epoch + "]").hasArg().build());
 		options.addOption(Option.builder("minCount").desc("minimal number of word occurences [" + minCount + "]")
 				.hasArg().build());
+		options.addOption(Option.builder("minCountLabel")
+				.desc("minimal number of label occurences [" + minCountLabel + "]").hasArg().build());
 		options.addOption(
 				Option.builder("neg").desc("number of negatives sampled [" + minCount + "]").hasArg().build());
 		options.addOption(
@@ -135,6 +141,10 @@ public class Args {
 		options.addOption(Option.builder("thread").desc("number of threads [" + thread + "]").hasArg().build());
 		options.addOption(Option.builder("t").desc("sampling threshold [" + t + "]").hasArg().build());
 		options.addOption(Option.builder("label").desc("labels prefix [" + label + "]").hasArg().build());
+		options.addOption(Option.builder("verbose").desc("verbosity level [" + label + "]").hasArg().build());
+		options.addOption(Option.builder("pretrainedVectors")
+				.desc("pretrained word vectors for supervised learning  [" + pretrainedVectors + "]").hasArg().build());
+
 		return options;
 	}
 
@@ -144,6 +154,9 @@ public class Args {
 			model = model_name.sup;
 			loss = loss_name.softmax;
 			minCount = 1;
+			minn = 0;
+			maxn = 0;
+			lr = 0.1;
 		} else if ("cbow".equalsIgnoreCase(command)) {
 			model = model_name.cbow;
 		}
@@ -158,6 +171,9 @@ public class Args {
 			CommandLine line = parser.parse(options, fargs);
 			input = line.getOptionValue("input");
 			output = line.getOptionValue("output");
+			if (line.hasOption("test")) {
+				test = line.getOptionValue("test");
+			}
 			if (line.hasOption("lr")) {
 				lr = Double.parseDouble(line.getOptionValue("lr"));
 			}
@@ -175,6 +191,9 @@ public class Args {
 			}
 			if (line.hasOption("minCount")) {
 				minCount = Integer.parseInt(line.getOptionValue("minCount"));
+			}
+			if (line.hasOption("minCountLabel")) {
+				minCountLabel = Integer.parseInt(line.getOptionValue("minCountLabel"));
 			}
 			if (line.hasOption("neg")) {
 				neg = Integer.parseInt(line.getOptionValue("neg"));
@@ -210,6 +229,12 @@ public class Args {
 			if (line.hasOption("label")) {
 				label = line.getOptionValue("label");
 			}
+			if (line.hasOption("verbose")) {
+				verbose = Integer.parseInt(line.getOptionValue("verbose"));
+			}
+			if (line.hasOption("pretrainedVectors")) {
+				pretrainedVectors = line.getOptionValue("pretrainedVectors");
+			}
 		} catch (ParseException exp) {
 			System.out.println("Unexpected exception:" + exp.getMessage());
 			printHelp(options);
@@ -221,31 +246,5 @@ public class Args {
 		HelpFormatter formatter = new HelpFormatter();
 		formatter.printHelp("FastText", options);
 	}
-
-	// void Args::printHelp() {
-	// std::cout
-	// << "\n"
-	// << "The following arguments are mandatory:\n"
-	// << " -input training file path\n"
-	// << " -output output file path\n\n"
-	// << "The following arguments are optional:\n"
-	// << " -lr learning rate [" << lr << "]\n"
-	// << " -lrUpdateRate change the rate of updates for the learning rate [" <<
-	// lrUpdateRate << "]\n"
-	// << " -dim size of word vectors [" << dim << "]\n"
-	// << " -ws size of the context window [" << ws << "]\n"
-	// << " -epoch number of epochs [" << epoch << "]\n"
-	// << " -minCount minimal number of word occurences [" << minCount << "]\n"
-	// << " -neg number of negatives sampled [" << neg << "]\n"
-	// << " -wordNgrams max length of word ngram [" << wordNgrams << "]\n"
-	// << " -loss loss function {ns, hs, softmax} [ns]\n"
-	// << " -bucket number of buckets [" << bucket << "]\n"
-	// << " -minn min length of char ngram [" << minn << "]\n"
-	// << " -maxn max length of char ngram [" << maxn << "]\n"
-	// << " -thread number of threads [" << thread << "]\n"
-	// << " -t sampling threshold [" << t << "]\n"
-	// << " -label labels prefix [" << label << "]\n"
-	// << std::endl;
-	// }
 
 }

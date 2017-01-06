@@ -13,7 +13,6 @@ import java.util.Iterator;
 import java.util.Vector;
 
 import org.apache.commons.math3.distribution.UniformRealDistribution;
-import org.apache.log4j.Logger;
 
 import fasttext.Args.model_name;
 import com.google.common.base.Preconditions;
@@ -22,8 +21,6 @@ import com.google.common.primitives.UnsignedInteger;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 
 public class Dictionary {
-
-	private static Logger logger = Logger.getLogger(Dictionary.class);
 
 	private static final int MAX_VOCAB_SIZE = 30000000;
 	private static final int MAX_LINE_SIZE = 1024;
@@ -68,15 +65,16 @@ public class Dictionary {
 
 	private Vector<entry> words_;
 	private Vector<Float> pdiscard_;
-	private Long2IntOpenHashMap word2int_; // Map<Long, Integer>
+	private Long2IntOpenHashMap word2int_;
 	private int size_;
 	private int nwords_;
 	private int nlabels_;
 	private long ntokens_;
 
-	private Args args;
+	private Args args_;
 
 	public Dictionary(Args args) {
+		args_ = args;
 		size_ = 0;
 		nwords_ = 0;
 		nlabels_ = 0;
@@ -84,7 +82,6 @@ public class Dictionary {
 		word2int_ = new Long2IntOpenHashMap(MAX_VOCAB_SIZE);
 		((Long2IntOpenHashMap) word2int_).defaultReturnValue(-1);
 		words_ = new Vector<entry>(MAX_VOCAB_SIZE);
-		this.args = args;
 	}
 
 	public long find(final String w) {
@@ -96,21 +93,6 @@ public class Dictionary {
 		return h;
 	}
 
-	/**
-	 * String FNV-1a Hash
-	 * 
-	 * @param str
-	 * @return
-	 */
-	public static long hash(final String str) {
-		int h = (int) 2166136261L;// 0xffffffc5;
-		for (byte strByte : str.getBytes()) {
-			h = (h ^ strByte) * 16777619; // FNV-1a
-			// h = (h * 16777619) ^ strByte; //FNV-1
-		}
-		return UnsignedInteger.fromIntBits(h).longValue();
-	}
-
 	public void add(final String w) {
 		long h = find(w);
 		ntokens_++;
@@ -118,7 +100,7 @@ public class Dictionary {
 			entry e = new entry();
 			e.word = w;
 			e.count = 1;
-			e.type = w.contains(args.label) ? entry_type.label : entry_type.word;
+			e.type = w.contains(args_.label) ? entry_type.label : entry_type.word;
 			words_.add(e);
 			word2int_.put(h, size_++);
 		} else {
@@ -155,15 +137,17 @@ public class Dictionary {
 		return ngrams;
 	}
 
+	public boolean discard(int id, float rand) {
+		Preconditions.checkArgument(id >= 0);
+		Preconditions.checkArgument(id < nwords_);
+		if (args_.model == model_name.sup)
+			return false;
+		return rand > pdiscard_.get(id);
+	}
+
 	public int getId(final String w) {
 		long h = find(w);
 		return word2int_.get(h);
-	}
-
-	public String getWord(int id) {
-		Preconditions.checkArgument(id >= 0);
-		Preconditions.checkArgument(id < size_);
-		return words_.get(id).word;
 	}
 
 	public entry_type getType(int id) {
@@ -172,12 +156,47 @@ public class Dictionary {
 		return words_.get(id).type;
 	}
 
-	public boolean discard(int id, float rand) {
+	public String getWord(int id) {
 		Preconditions.checkArgument(id >= 0);
-		Preconditions.checkArgument(id < nwords_);
-		if (args.model == model_name.sup)
-			return false;
-		return rand > pdiscard_.get(id);
+		Preconditions.checkArgument(id < size_);
+		return words_.get(id).word;
+	}
+
+	/**
+	 * String FNV-1a Hash
+	 * 
+	 * @param str
+	 * @return
+	 */
+	public static long hash(final String str) {
+		int h = (int) 2166136261L;// 0xffffffc5;
+		for (byte strByte : str.getBytes()) {
+			h = (h ^ strByte) * 16777619; // FNV-1a
+			// h = (h * 16777619) ^ strByte; //FNV-1
+		}
+		return UnsignedInteger.fromIntBits(h).longValue();
+	}
+
+	public void computeNgrams(final String word, Vector<Integer> ngrams) {
+		for (int i = 0; i < word.length(); i++) {
+			StringBuilder ngram = new StringBuilder();
+			if (charMatches(word.charAt(i))) {
+				continue;
+			}
+			for (int j = i, n = 1; j < word.length() && n <= args_.maxn; n++) {
+				ngram.append(word.charAt(j++));
+				while (j < word.length() && charMatches(word.charAt(j))) {
+					ngram.append(word.charAt(j++));
+				}
+				if (n >= args_.minn && !(n == 1 && (i == 0 || j == word.length()))) {
+					int h = (int) (hash(ngram.toString()) % args_.bucket);
+					if (h < 0) {
+						System.err.println("computeNgrams h<0: " + h + " on word: " + word);
+					}
+					ngrams.add(nwords_ + h);
+				}
+			}
+		}
 	}
 
 	private boolean charMatches(char ch) {
@@ -195,28 +214,6 @@ public class Dictionary {
 		return false;
 	}
 
-	public void computeNgrams(final String word, Vector<Integer> ngrams) {
-		for (int i = 0; i < word.length(); i++) {
-			StringBuilder ngram = new StringBuilder();
-			if (charMatches(word.charAt(i))) {
-				continue;
-			}
-			for (int j = i, n = 1; j < word.length() && n <= args.maxn; n++) {
-				ngram.append(word.charAt(j++));
-				while (j < word.length() && charMatches(word.charAt(j))) {
-					ngram.append(word.charAt(j++));
-				}
-				if (n >= args.minn) {
-					int h = (int) (hash(ngram.toString()) % args.bucket);
-					if (h < 0) {
-						System.err.println("computeNgrams h<0: " + h + " on word: " + word);
-					}
-					ngrams.add(nwords_ + h);
-				}
-			}
-		}
-	}
-
 	public void initNgrams() {
 		for (int i = 0; i < size_; i++) {
 			String word = BOW + words_.get(i).word + EOW;
@@ -224,33 +221,9 @@ public class Dictionary {
 			if (e.subwords == null) {
 				e.subwords = new Vector<Integer>();
 			}
-			// when it's classification the following init may be not used
-			//e.subwords.add(i);
-			//computeNgrams(word, e.subwords);
+			e.subwords.add(i);
+			computeNgrams(word, e.subwords);
 		}
-	}
-
-	public String getLabel(int lid) {
-		Preconditions.checkArgument(lid >= 0);
-		Preconditions.checkArgument(lid < nlabels_);
-		return words_.get(lid + nwords_).word;
-	}
-
-	public void initTableDiscard() {
-		pdiscard_ = new Vector<Float>(size_);
-		for (int i = 0; i < size_; i++) {
-			float f = (float) (words_.get(i).count) / (float) ntokens_;
-			pdiscard_.add((float) (Math.sqrt(args.t / f) + args.t / f));
-		}
-	}
-
-	public Vector<Long> getCounts(entry_type type) {
-		Vector<Long> counts = new Vector<Long>(words_.size());
-		for (entry w : words_) {
-			if (w.type == type)
-				counts.add(w.count);
-		}
-		return counts;
 	}
 
 	public void readFromFile(String file) throws IOException {
@@ -266,11 +239,12 @@ public class Dictionary {
 				String[] words = line.split("\\s+");
 				for (String word : words) {
 					add(word);
-					if (ntokens_ % 1000000 == 0) {
+					if (ntokens_ % 1000000 == 0 && args_.verbose > 1) {
 						System.out.println("Read " + ntokens_ / 1000000 + "M words");
 					}
 					if (size_ > 0.75 * MAX_VOCAB_SIZE) {
-						threshold(minThreshold++);
+						minThreshold++;
+						threshold(minThreshold, minThreshold);
 					}
 				}
 			}
@@ -278,29 +252,29 @@ public class Dictionary {
 			fis.close();
 			br.close();
 		}
-		System.out.println("\rRead " + ntokens_ / 1000000 + "M words");
-		threshold(args.minCount);
+		threshold(args_.minCount, args_.minCountLabel);
 		initTableDiscard();
-		initNgrams();
+		if (model_name.cbow == args_.model || model_name.sg == args_.model) {
+			initNgrams();
+		}
+		if (args_.verbose > 0) {
+			System.out.println("\rRead " + ntokens_ / 1000000 + "M words");
+			System.out.println("Number of words:  " + nwords_);
+			System.out.println("Number of labels: " + nlabels_);
+		}
+		if (size_ == 0) {
+			System.err.println("Empty vocabulary. Try a smaller -minCount value.");
+			System.exit(1);
+		}
 	}
 
-	private transient Comparator<entry> entry_comparator = new Comparator<entry>() {
-		@Override
-		public int compare(entry o1, entry o2) {
-			int cmp = o1.type.value > o2.type.value ? +1 : o1.type.value < o2.type.value ? -1 : 0;
-			if (cmp == 0) {
-				cmp = o1.count > o2.count ? +1 : o1.count < o2.count ? -1 : 0;
-			}
-			return cmp;
-		}
-	};
-
-	public void threshold(long t) {
+	public void threshold(long t, long tl) {
 		Collections.sort(words_, entry_comparator);
 		Iterator<entry> iterator = words_.iterator();
 		while (iterator.hasNext()) {
 			entry _entry = iterator.next();
-			if (_entry.count < t) {
+			if ((entry_type.word == _entry.type && _entry.count < t)
+					|| (entry_type.label == _entry.type && _entry.count < tl)) {
 				iterator.remove();
 			}
 		}
@@ -311,31 +285,67 @@ public class Dictionary {
 		for (entry _entry : words_) {
 			long h = find(_entry.word);
 			word2int_.put(h, size_++);
-			if (_entry.type == entry_type.word)
+			if (entry_type.word == _entry.type) {
 				nwords_++;
-			if (_entry.type == entry_type.label)
+			}
+			if (entry_type.label == _entry.type) {
 				nlabels_++;
+			}
 		}
+	}
+
+	private transient Comparator<entry> entry_comparator = new Comparator<entry>() {
+		@Override
+		public int compare(entry o1, entry o2) {
+			int cmp = o1.type.value > o2.type.value ? +1 : o1.type.value < o2.type.value ? -1 : 0;
+			if (cmp == 0) {
+				cmp = o2.count > o1.count ? +1 : o2.count < o1.count ? -1 : 0;
+			}
+			return cmp;
+		}
+	};
+
+	public void initTableDiscard() {
+		pdiscard_ = new Vector<Float>(size_);
+		for (int i = 0; i < size_; i++) {
+			float f = (float) (words_.get(i).count) / (float) ntokens_;
+			pdiscard_.add((float) (Math.sqrt(args_.t / f) + args_.t / f));
+		}
+	}
+
+	public Vector<Long> getCounts(entry_type type) {
+		Vector<Long> counts = new Vector<Long>(words_.size());
+		for (entry w : words_) {
+			if (w.type == type)
+				counts.add(w.count);
+		}
+		return counts;
 	}
 
 	public void addNgrams(Vector<Integer> line, int n) {
 		int line_size = line.size();
 		for (int i = 0; i < line_size; i++) {
-			long h = Long.valueOf(line.get(i));
+			long h = (long) line.get(i);
 			for (int j = i + 1; j < line_size && j < i + n; j++) {
 				h = h * 116049371 + line.get(j);
-				line.add(nwords_ + (int)(h % args.bucket));
+				line.add(nwords_ + (int) (h % args_.bucket));
 			}
 		}
 	}
 
-	public int getLine(String line, Vector<Integer> words, Vector<Integer> labels, UniformRealDistribution urd)
-			throws IOException {
+	public int getLine(String line, Vector<Integer> words, Vector<Integer> labels, UniformRealDistribution urd) {
+		if (!Utils.isEmpty(line)) {
+			String[] tokens = line.split("\\s+");
+			return getLine(tokens, words, labels, urd);
+		}
+		return 0;
+	}
+
+	public int getLine(String[] tokens, Vector<Integer> words, Vector<Integer> labels, UniformRealDistribution urd) {
 		int ntokens = 0;
 		words.clear();
 		labels.clear();
-		if (line != null) {
-			String[] tokens = line.split("\\s+");
+		if (tokens != null) {
 			for (String token : tokens) {
 				ntokens++;
 				// if (token.equals(EOS))
@@ -351,11 +361,17 @@ public class Dictionary {
 				if (type == entry_type.label) {
 					labels.add(wid - nwords_);
 				}
-				if (words.size() > MAX_LINE_SIZE && args.model != model_name.sup)
+				if (words.size() > MAX_LINE_SIZE && args_.model != model_name.sup)
 					break;
 			}
 		}
 		return ntokens;
+	}
+
+	public String getLabel(int lid) {
+		Preconditions.checkArgument(lid >= 0);
+		Preconditions.checkArgument(lid < nlabels_);
+		return words_.get(lid + nwords_).word;
 	}
 
 	public void save(OutputStream ofs) throws IOException {
@@ -381,13 +397,6 @@ public class Dictionary {
 		nlabels_ = IOUtil.readInt(ifs);
 		ntokens_ = IOUtil.readLong(ifs);
 
-		if (logger.isDebugEnabled()) {
-			logger.debug("size_: " + size_);
-			logger.debug("nwords_: " + nwords_);
-			logger.debug("nlabels_: " + nlabels_);
-			logger.debug("ntokens_: " + ntokens_);
-		}
-
 		for (int i = 0; i < size_; i++) {
 			entry e = new entry();
 			e.word = IOUtil.readString((DataInputStream) ifs);
@@ -395,15 +404,11 @@ public class Dictionary {
 			e.type = entry_type.fromValue(((DataInputStream) ifs).readByte() & 0xFF);
 			words_.add(e);
 			word2int_.put(find(e.word), i);
-
-			if (logger.isDebugEnabled()) {
-				logger.debug("e.word: " + e.word);
-				logger.debug("e.count: " + e.count);
-				logger.debug("e.type: " + e.type);
-			}
 		}
 		initTableDiscard();
-		initNgrams();
+		if (model_name.cbow == args_.model || model_name.sg == args_.model) {
+			initNgrams();
+		}
 	}
 
 }

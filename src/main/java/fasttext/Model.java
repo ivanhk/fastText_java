@@ -1,6 +1,8 @@
 package fasttext;
 
-import com.google.gson.JsonObject;
+import java.util.Collections;
+import java.util.Comparator;
+
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.random.Well19937c;
 
@@ -10,10 +12,12 @@ import com.google.common.base.Preconditions;
 
 public class Model {
 
-	static final int NEGATIVE_TABLE_SIZE = 10000000;
-	static final float MIN_LR = 0.000001f;
+	static final int SIGMOID_TABLE_SIZE = 512;
+	static final int MAX_SIGMOID = 8;
+	static final int LOG_TABLE_SIZE = 512;
 
-	private static float lr_ = MIN_LR;
+	static final int NEGATIVE_TABLE_SIZE = 10000000;
+	// static final float MIN_LR = 0.000001f;
 
 	public class Node {
 		int parent;
@@ -23,186 +27,213 @@ public class Model {
 		boolean binary;
 	}
 
-	private Args args;
-
 	private Matrix wi_; // input
 	private Matrix wo_; // output
+	private Args args_;
 	private Vector hidden_;
 	private Vector output_;
 	private Vector grad_;
 	private int hsz_; // dim
 	private int isz_; // input vocabSize
 	private int osz_; // output vocabSize
+	private float loss_;
+	private long nexamples_;
+	private float[] t_sigmoid;
+	private float[] t_log;
+	// used for negative sampling:
 	private java.util.Vector<Integer> negatives;
 	private int negpos;
+	// used for hierarchical softmax:
 	private java.util.Vector<java.util.Vector<Integer>> paths;
 	private java.util.Vector<java.util.Vector<Boolean>> codes;
 	private java.util.Vector<Node> tree;
 
 	public RandomGenerator rng;
 
-	public Model(Args args, Matrix wi, Matrix wo, int hsz, float lr, int seed) {
-		this.args = args;
+	public Model(Matrix wi, Matrix wo, Args args, int seed) {
+		args_ = args;
 		wi_ = new Matrix(wi);
 		wo_ = new Matrix(wo);
-		hidden_ = new Vector(hsz);
+		hidden_ = new Vector(args.dim);
 		output_ = new Vector(wo.m_);
-		grad_ = new Vector(hsz);
+		grad_ = new Vector(args.dim);
 		rng = new Well19937c(seed);
 		isz_ = wi.m_;
 		osz_ = wo.m_;
-		hsz_ = hsz;
-		lr_ = lr;
-		negpos = 0;
+		hsz_ = args.dim;
+		loss_ = 0.0f;
+		nexamples_ = 1;
+		initSigmoid();
+		initLog();
 	}
 
-	public void setLearningRate(float lr) {
-		lr_ = (lr < MIN_LR) ? MIN_LR : lr;
-	}
-
-	public float getLearningRate() {
-		return lr_;
-	}
-
-	public float binaryLogistic(int target, boolean label) {
-		float score = Utils.sigmoid(wo_.dotRow(hidden_, target));
-		float alpha = lr_ * (label ? 1.0f : 0.0f - score);
+	public float binaryLogistic(int target, boolean label, float lr) {
+		float score = sigmoid(wo_.dotRow(hidden_, target));
+		float alpha = lr * (label ? 1.0f : 0.0f - score);
 		grad_.addRow(wo_, target, alpha);
 		wo_.addRow(hidden_, target, alpha);
 		if (label) {
-			return -Utils.log(score);
+			return -log(score);
 		} else {
-			return -Utils.log((float) (1.0 - score));
+			return -log((float) (1.0 - score));
 		}
 	}
 
-	public float negativeSampling(int target) {
+	public float negativeSampling(int target, float lr) {
 		float loss = 0.0f;
 		grad_.zero();
-		for (int n = 0; n <= args.neg; n++) {
+		for (int n = 0; n <= args_.neg; n++) {
 			if (n == 0) {
-				loss += binaryLogistic(target, true);
+				loss += binaryLogistic(target, true, lr);
 			} else {
-				loss += binaryLogistic(getNegative(target), false);
+				loss += binaryLogistic(getNegative(target), false, lr);
 			}
 		}
 		return loss;
 	}
 
-	public float hierarchicalSoftmax(int target) {
+	public float hierarchicalSoftmax(int target, float lr) {
 		float loss = 0.0f;
 		grad_.zero();
 		final java.util.Vector<Boolean> binaryCode = codes.get(target);
 		final java.util.Vector<Integer> pathToRoot = paths.get(target);
 		for (int i = 0; i < pathToRoot.size(); i++) {
-			loss += binaryLogistic(pathToRoot.get(i), binaryCode.get(i));
+			loss += binaryLogistic(pathToRoot.get(i), binaryCode.get(i), lr);
 		}
 		return loss;
 	}
 
-	public float softmax(int target) {
+	public void computeOutputSoftmax(Vector hidden, Vector output) {
+		output.mul(wo_, hidden);
+		float max = output.get(0), z = 0.0f;
+		for (int i = 1; i < osz_; i++) {
+			max = Math.max(output.get(i), max);
+		}
+		for (int i = 0; i < osz_; i++) {
+			output.set(i, (float) Math.exp(output.get(i) - max));
+			z += output.get(i);
+		}
+		for (int i = 0; i < osz_; i++) {
+			output.set(i, output.get(i) / z);
+		}
+	}
+
+	public void computeOutputSoftmax() {
+		computeOutputSoftmax(hidden_, output_);
+	}
+
+	public float softmax(int target, float lr) {
 		grad_.zero();
-		output_.mul(wo_, hidden_);
-		float max = 0.0f, z = 0.0f;
-		for (int i = 0; i < osz_; i++) {
-			max = Math.max(output_.get(i), max);
-		}
-		for (int i = 0; i < osz_; i++) {
-			output_.set(i, (float) Math.exp(output_.get(i) - max));
-			z += output_.get(i);
-		}
+		computeOutputSoftmax();
 		for (int i = 0; i < osz_; i++) {
 			float label = (i == target) ? 1.0f : 0.0f;
-			output_.set(i, output_.get(i) / z);
-			float alpha = lr_ * (label - output_.get(i));
+			float alpha = lr * (label - output_.get(i));
 			grad_.addRow(wo_, i, alpha);
 			wo_.addRow(hidden_, i, alpha);
 		}
-		return -Utils.log(output_.get(target));
+		return -log(output_.get(target));
 	}
 
-	public int getNegative(int target) {
-		int negative;
-		do {
-			negative = negatives.get(negpos);
-			negpos = (negpos + 1) % negatives.size();
-		} while (target == negative);
-		return negative;
-	}
-
-	public int predict(final java.util.Vector<Integer> input) {
-		hidden_.zero();
+	public void computeHidden(final java.util.Vector<Integer> input, Vector hidden) {
+		Preconditions.checkArgument(hidden.size() == hsz_);
+		hidden.zero();
 		for (Integer it : input) {
-			hidden_.addRow(wi_, it);
+			hidden.addRow(wi_, it);
 		}
-		hidden_.mul((float) (1.0 / input.size()));
+		hidden.mul(1.0f / input.size());
+	}
 
-		if (args.loss == loss_name.hs) {
-			float max = -1e10f;
-			int argmax = -1;
-			dfs(2 * osz_ - 2, 0.0f, max, argmax);
-			return argmax;
+	private Comparator<Pair<Float, Integer>> comparePairs = new Comparator<Pair<Float, Integer>>() {
+
+		@Override
+		public int compare(Pair<Float, Integer> o1, Pair<Float, Integer> o2) {
+			return o2.getKey() > o1.getKey() ? +1 : o2.getKey() < o1.getKey() ? -1 : 0;
+		}
+	};
+
+	public void predict(final java.util.Vector<Integer> input, int k, java.util.Vector<Pair<Float, Integer>> heap,
+			Vector hidden, Vector output) {
+		Preconditions.checkArgument(k > 0);
+		heap.ensureCapacity(k + 1);
+		computeHidden(input, hidden);
+		if (args_.loss == loss_name.hs) {
+			dfs(k, 2 * osz_ - 2, 0.0f, heap, hidden);
 		} else {
-			output_.mul(wo_, hidden_);
-			return output_.argmax();
+			findKBest(k, heap, hidden, output);
+		}
+		Collections.sort(heap, comparePairs);
+	}
+
+	public void predict(final java.util.Vector<Integer> input, int k, java.util.Vector<Pair<Float, Integer>> heap) {
+		predict(input, k, heap, hidden_, output_);
+	}
+
+	public void findKBest(int k, java.util.Vector<Pair<Float, Integer>> heap, Vector hidden, Vector output) {
+		computeOutputSoftmax(hidden, output);
+		for (int i = 0; i < osz_; i++) {
+			if (heap.size() == k && log(output.get(i)) < heap.get(0).getKey()) {
+				continue;
+			}
+			heap.add(new Pair<Float, Integer>(log(output.get(i)), i));
+			Collections.sort(heap, comparePairs);
+			if (heap.size() > k) {
+				heap.remove(heap.size() - 1); // pop last
+			}
 		}
 	}
 
-	/**
-	 * predict with probability
-	 * @param input
-     * @return
-     */
-	public int predict(final java.util.Vector<Integer> input, JsonObject detail) {
-		hidden_.zero();
-		for (Integer it : input) {
-			hidden_.addRow(wi_, it);
-		}
-		hidden_.mul((float) (1.0 / input.size()));
-
-		if (args.loss == loss_name.hs) {
-			float max = -1e10f;
-			int argmax = -1;
-			dfs(2 * osz_ - 2, 0.0f, max, argmax);
-			return argmax;
-		} else {
-			output_.mul(wo_, hidden_);
-			int max_idx = 0;
-			float max_val = output_.data_[0];
-			for(int i = 1; i < osz_; i ++) {
-				if(output_.data_[i] > max_val) {
-					max_val = output_.data_[i];
-					max_idx = i;
-				}
-			}
-			float z = 0;
-			for(int i = 0; i < osz_; i ++) {
-				output_.data_[i] = (float) Math.exp(output_.data_[i] - max_val);
-				z += output_.data_[i];
-			}
-			for(int i = 0; i < osz_; i ++) {
-				output_.data_[i] /= z;
-			}
-			int idx = output_.argmax();
-
-			detail.addProperty("label_idx", idx);
-			detail.addProperty("prob", (double)output_.data_[idx]);
-			//score = Float.valueOf(output_.data_[idx]);
-			return idx;
-		}
-	}
-
-	public void dfs(int node, float score, float max, int argmax) {
-		if (score < max)
+	public void dfs(int k, int node, float score, java.util.Vector<Pair<Float, Integer>> heap, Vector hidden) {
+		if (heap.size() == k && score < heap.get(0).getKey()) {
 			return;
+		}
+
 		if (tree.get(node).left == -1 && tree.get(node).right == -1) {
-			max = score;
-			argmax = node;
+			heap.add(new Pair<Float, Integer>(score, node));
+			Collections.sort(heap, comparePairs);
+			if (heap.size() > k) {
+				heap.remove(heap.size() - 1); // pop last
+			}
 			return;
 		}
-		float f = Utils.sigmoid(wo_.dotRow(hidden_, node - osz_));
-		dfs(tree.get(node).left, score + Utils.log(1.0f - f), max, argmax);
-		dfs(tree.get(node).right, score + Utils.log(f), max, argmax);
+
+		float f = sigmoid(wo_.dotRow(hidden_, node - osz_));
+		dfs(k, tree.get(node).left, score + log(1.0f - f), heap, hidden);
+		dfs(k, tree.get(node).right, score + log(f), heap, hidden);
+	}
+
+	public void update(final java.util.Vector<Integer> input, int target, float lr) {
+		Preconditions.checkArgument(target >= 0);
+		Preconditions.checkArgument(target < osz_);
+		if (input.size() == 0) {
+			return;
+		}
+		computeHidden(input, hidden_);
+
+		if (args_.loss == loss_name.ns) {
+			loss_ += negativeSampling(target, lr);
+		} else if (args_.loss == loss_name.hs) {
+			loss_ += hierarchicalSoftmax(target, lr);
+		} else {
+			loss_ += softmax(target, lr);
+		}
+		nexamples_ += 1;
+
+		if (args_.model == model_name.sup) {
+			grad_.mul(1.0f / input.size());
+		}
+		for (Integer it : input) {
+			wi_.addRow(grad_, it, 1.0f);
+		}
+	}
+
+	public void setTargetCounts(final java.util.Vector<Long> counts) {
+		Preconditions.checkArgument(counts.size() == osz_);
+		if (args_.loss == loss_name.ns) {
+			initTableNegatives(counts);
+		}
+		if (args_.loss == loss_name.hs) {
+			buildTree(counts);
+		}
 	}
 
 	public void initTableNegatives(final java.util.Vector<Long> counts) {
@@ -220,43 +251,13 @@ public class Model {
 		Utils.shuffle(negatives, rng);
 	}
 
-	public float update(final java.util.Vector<Integer> input, int target) {
-		Preconditions.checkArgument(target >= 0);
-		Preconditions.checkArgument(target < osz_);
-		if (input.size() == 0)
-			return 0.0f;
-		hidden_.zero();
-		for (Integer it : input) {
-			hidden_.addRow(wi_, it);
-		}
-		hidden_.mul((float) (1.0 / input.size()));
-
-		float loss;
-		if (args.loss == loss_name.ns) {
-			loss = negativeSampling(target);
-		} else if (args.loss == loss_name.hs) {
-			loss = hierarchicalSoftmax(target);
-		} else {
-			loss = softmax(target);
-		}
-
-		if (args.model == model_name.sup) {
-			grad_.mul((float) (1.0 / input.size()));
-		}
-		for (Integer it : input) {
-			wi_.addRow(grad_, it, 1.0f);
-		}
-		return loss;
-	}
-
-	public void setTargetCounts(final java.util.Vector<Long> counts) {
-		Preconditions.checkArgument(counts.size() == osz_);
-		if (args.loss == loss_name.ns) {
-			initTableNegatives(counts);
-		}
-		if (args.loss == loss_name.hs) {
-			buildTree(counts);
-		}
+	public int getNegative(int target) {
+		int negative;
+		do {
+			negative = negatives.get(negpos);
+			negpos = (negpos + 1) % negatives.size();
+		} while (target == negative);
+		return negative;
 	}
 
 	public void buildTree(final java.util.Vector<Long> counts) {
@@ -305,6 +306,45 @@ public class Model {
 			}
 			paths.add(path);
 			codes.add(code);
+		}
+	}
+
+	public float getLoss() {
+		return loss_ / nexamples_;
+	}
+
+	private void initSigmoid() {
+		t_sigmoid = new float[SIGMOID_TABLE_SIZE + 1];
+		for (int i = 0; i < SIGMOID_TABLE_SIZE + 1; i++) {
+			float x = (float) (i * 2 * MAX_SIGMOID) / SIGMOID_TABLE_SIZE - MAX_SIGMOID;
+			t_sigmoid[i] = (float) (1.0 / (1.0 + Math.exp(-x)));
+		}
+	}
+
+	private void initLog() {
+		t_log = new float[LOG_TABLE_SIZE + 1];
+		for (int i = 0; i < LOG_TABLE_SIZE + 1; i++) {
+			float x = (float) (((float) (i) + 1e-5) / LOG_TABLE_SIZE);
+			t_log[i] = (float) Math.log(x);
+		}
+	}
+
+	public float log(float x) {
+		if (x > 1.0) {
+			return 0.0f;
+		}
+		int i = (int) (x * LOG_TABLE_SIZE);
+		return t_log[i];
+	}
+
+	public float sigmoid(float x) {
+		if (x < -MAX_SIGMOID) {
+			return 0.0f;
+		} else if (x > MAX_SIGMOID) {
+			return 1.0f;
+		} else {
+			int i = (int) ((x + MAX_SIGMOID) * SIGMOID_TABLE_SIZE / MAX_SIGMOID / 2);
+			return t_sigmoid[i];
 		}
 	}
 }

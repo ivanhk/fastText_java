@@ -1,5 +1,7 @@
 package fasttext;
 
+import java.util.Arrays;
+
 import com.google.common.base.Preconditions;
 
 public class Vector {
@@ -10,6 +12,10 @@ public class Vector {
 	public Vector(int size) {
 		m_ = size;
 		data_ = new float[size];
+	}
+	
+	public int size(){
+		return m_;
 	}
 
 	public void zero() {
@@ -71,6 +77,15 @@ public class Vector {
 
 	public void set(int i, float value) {
 		data_[i] = value;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append("Vector [data_=");
+		builder.append(Arrays.toString(data_));
+		builder.append("]");
+		return builder.toString();
 	}
 
 }

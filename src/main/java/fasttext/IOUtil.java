@@ -4,6 +4,11 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+/**
+ * Read/write cpp primitive type
+ * @author Ivan
+ *
+ */
 public class IOUtil {
 
 	private static final int MAX_STRING_SIZE = 50;
