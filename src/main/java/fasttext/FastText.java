@@ -19,8 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-import javax.rmi.CORBA.Util;
-
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
 import org.apache.commons.math3.distribution.UniformRealDistribution;
 
@@ -56,8 +54,9 @@ public class FastText {
 		if (file.exists()) {
 			file.delete();
 		}
+		file.getParentFile().mkdirs();
 		if (args_.verbose > 1) {
-			System.out.println("Saving Vectors to " + file.getAbsolutePath().toString());
+			System.out.println("Saving Vectors to " + file.getCanonicalPath().toString());
 		}
 
 		Writer writer = new FileWriter(file);
@@ -89,8 +88,9 @@ public class FastText {
 		if (file.exists()) {
 			file.delete();
 		}
+		file.getParentFile().mkdirs();
 		if (args_.verbose > 1) {
-			System.out.println("Saving model to " + file.getAbsolutePath().toString());
+			System.out.println("Saving model to " + file.getCanonicalPath().toString());
 		}
 		FileOutputStream fos = new FileOutputStream(file);
 		OutputStream ofs = new DataOutputStream(fos);
@@ -410,7 +410,6 @@ public class FastText {
 						}
 					}
 				}
-
 			} catch (IOException e) {
 				e.printStackTrace();
 				System.exit(1);
@@ -547,7 +546,7 @@ public class FastText {
 		model_ = new Model(input_, output_, args_, 0);
 
 		long trainTime = (System.currentTimeMillis() - t0) / 1000;
-		System.out.printf("Train time used: %d sec\n", trainTime);
+		System.out.printf("\nTrain time used: %d sec\n", trainTime);
 
 		saveModel();
 		if (args_.model != model_name.sup) {

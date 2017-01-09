@@ -240,7 +240,7 @@ public class Dictionary {
 				for (String word : words) {
 					add(word);
 					if (ntokens_ % 1000000 == 0 && args_.verbose > 1) {
-						System.out.println("Read " + ntokens_ / 1000000 + "M words");
+						System.out.printf("\rRead %dM words", ntokens_ / 1000000);
 					}
 					if (size_ > 0.75 * MAX_VOCAB_SIZE) {
 						minThreshold++;
@@ -258,7 +258,7 @@ public class Dictionary {
 			initNgrams();
 		}
 		if (args_.verbose > 0) {
-			System.out.println("\rRead " + ntokens_ / 1000000 + "M words");
+			System.out.printf("\rRead %dM words\n", ntokens_ / 1000000);
 			System.out.println("Number of words:  " + nwords_);
 			System.out.println("Number of labels: " + nlabels_);
 		}

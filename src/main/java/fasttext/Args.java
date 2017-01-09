@@ -124,7 +124,7 @@ public class Args {
 		options.addOption(Option.builder("lrUpdateRate")
 				.desc("change the rate of updates for the learning rate [" + lrUpdateRate + "]").hasArg().build());
 		options.addOption(Option.builder("dim").desc("size of word vectors [" + dim + "]").hasArg().build());
-		options.addOption(Option.builder("ws").desc("size of the context window [" + lr + "]").hasArg().build());
+		options.addOption(Option.builder("ws").desc("size of the context window [" + ws + "]").hasArg().build());
 		options.addOption(Option.builder("epoch").desc("number of epochs [" + epoch + "]").hasArg().build());
 		options.addOption(Option.builder("minCount").desc("minimal number of word occurences [" + minCount + "]")
 				.hasArg().build());

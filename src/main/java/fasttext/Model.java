@@ -175,8 +175,8 @@ public class Model {
 				continue;
 			}
 			heap.add(new Pair<Float, Integer>(log(output.get(i)), i));
-			Collections.sort(heap, comparePairs);
 			if (heap.size() > k) {
+				Collections.sort(heap, comparePairs);
 				heap.remove(heap.size() - 1); // pop last
 			}
 		}
@@ -189,8 +189,8 @@ public class Model {
 
 		if (tree.get(node).left == -1 && tree.get(node).right == -1) {
 			heap.add(new Pair<Float, Integer>(score, node));
-			Collections.sort(heap, comparePairs);
 			if (heap.size() > k) {
+				Collections.sort(heap, comparePairs);
 				heap.remove(heap.size() - 1); // pop last
 			}
 			return;
