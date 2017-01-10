@@ -25,9 +25,10 @@ public class Dictionary {
 	private static final int MAX_VOCAB_SIZE = 30000000;
 	private static final int MAX_LINE_SIZE = 1024;
 
-	// private static final String EOS = "</s>";
+	private static final String EOS = "</s>";
 	private static final String BOW = "<";
 	private static final String EOW = ">";
+	public static String LINE_SPLITTER = " ";
 
 	public enum entry_type {
 		word(0), label(1);
@@ -168,7 +169,7 @@ public class Dictionary {
 	 * @param str
 	 * @return
 	 */
-	public static long hash(final String str) {
+	public long hash(final String str) {
 		int h = (int) 2166136261L;// 0xffffffc5;
 		for (byte strByte : str.getBytes()) {
 			h = (h ^ strByte) * 16777619; // FNV-1a
@@ -236,9 +237,12 @@ public class Dictionary {
 				if (Utils.isEmpty(line) || line.startsWith("#")) {
 					continue;
 				}
-				String[] words = line.split("\\s+");
-				for (String word : words) {
-					add(word);
+				String[] tokens = line.split(LINE_SPLITTER, -1);
+				for (int i = 0; i < tokens.length; i++) {
+					if (i == tokens.length - 1 && Utils.isEmpty(tokens[i])) {
+						tokens[i] = EOS;
+					}
+					add(tokens[i]);
 					if (ntokens_ % 1000000 == 0 && args_.verbose > 1) {
 						System.out.printf("\rRead %dM words", ntokens_ / 1000000);
 					}
@@ -335,7 +339,7 @@ public class Dictionary {
 
 	public int getLine(String line, Vector<Integer> words, Vector<Integer> labels, UniformRealDistribution urd) {
 		if (!Utils.isEmpty(line)) {
-			String[] tokens = line.split("\\s+");
+			String[] tokens = line.split(LINE_SPLITTER, -1);
 			return getLine(tokens, words, labels, urd);
 		}
 		return 0;
@@ -346,11 +350,13 @@ public class Dictionary {
 		words.clear();
 		labels.clear();
 		if (tokens != null) {
-			for (String token : tokens) {
+			for (int i = 0; i < tokens.length; i++) {
+				if (i == tokens.length - 1 && Utils.isEmpty(tokens[i])) {
+					tokens[i] = EOS;
+				}
 				ntokens++;
-				// if (token.equals(EOS))
-				// break;
-				int wid = getId(token);
+
+				int wid = getId(tokens[i]);
 				if (wid < 0) {
 					continue;
 				}
@@ -361,8 +367,12 @@ public class Dictionary {
 				if (type == entry_type.label) {
 					labels.add(wid - nwords_);
 				}
-				if (words.size() > MAX_LINE_SIZE && args_.model != model_name.sup)
+				if (words.size() > MAX_LINE_SIZE && args_.model != model_name.sup) {
 					break;
+				}
+				// if (EOS == tokens[i]){
+				// break;
+				// }
 			}
 		}
 		return ntokens;

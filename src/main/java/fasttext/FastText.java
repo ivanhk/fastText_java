@@ -425,7 +425,7 @@ public class FastText {
 			// exit from thread
 			synchronized (ft) {
 				if (args_.verbose > 2) {
-					System.out.println("thread: " + threadId + " EXIT!");
+					System.out.println("\nthread: " + threadId + " EXIT!");
 				}
 				ft.threadCount--;
 				ft.notify();
@@ -490,7 +490,6 @@ public class FastText {
 				e.printStackTrace();
 			}
 		}
-
 	}
 
 	int threadCount;
