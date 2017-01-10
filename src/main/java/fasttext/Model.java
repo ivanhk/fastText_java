@@ -317,20 +317,20 @@ public class Model {
 		t_sigmoid = new float[SIGMOID_TABLE_SIZE + 1];
 		for (int i = 0; i < SIGMOID_TABLE_SIZE + 1; i++) {
 			float x = (float) (i * 2 * MAX_SIGMOID) / SIGMOID_TABLE_SIZE - MAX_SIGMOID;
-			t_sigmoid[i] = (float) (1.0 / (1.0 + Math.exp(-x)));
+			t_sigmoid[i] = (float) (1.0f / (1.0f + Math.exp(-x)));
 		}
 	}
 
 	private void initLog() {
 		t_log = new float[LOG_TABLE_SIZE + 1];
 		for (int i = 0; i < LOG_TABLE_SIZE + 1; i++) {
-			float x = (float) (((float) (i) + 1e-5) / LOG_TABLE_SIZE);
+			float x = (float) (((float) (i) + 1e-5f) / LOG_TABLE_SIZE);
 			t_log[i] = (float) Math.log(x);
 		}
 	}
 
 	public float log(float x) {
-		if (x > 1.0) {
+		if (x > 1.0f) {
 			return 0.0f;
 		}
 		int i = (int) (x * LOG_TABLE_SIZE);

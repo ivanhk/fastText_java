@@ -211,7 +211,7 @@ public class FastText {
 					model_.predict(line, k, modelPredictions);
 					for (Pair<Float, Integer> pair : modelPredictions) {
 						if (labels.contains(pair.getValue())) {
-							precision += 1.0;
+							precision += 1.0f;
 						}
 					}
 					nexamples++;
@@ -242,7 +242,7 @@ public class FastText {
 		}
 		Vector hidden = new Vector(args_.dim);
 		Vector output = new Vector(dict_.nlabels());
-		java.util.Vector<Pair<Float, Integer>> modelPredictions = new java.util.Vector<Pair<Float, Integer>>();
+		java.util.Vector<Pair<Float, Integer>> modelPredictions = new java.util.Vector<Pair<Float, Integer>>(k + 1);
 		model_.predict(words, k, modelPredictions, hidden, output);
 		predictions.clear();
 		for (Pair<Float, Integer> pair : modelPredictions) {
@@ -251,7 +251,7 @@ public class FastText {
 	}
 
 	public void predict(InputStream in, int k, boolean print_prob) throws IOException {
-		java.util.Vector<Pair<Float, String>> predictions = new java.util.Vector<Pair<Float, String>>();
+		java.util.Vector<Pair<Float, String>> predictions = new java.util.Vector<Pair<Float, String>>(k);
 
 		UniformRealDistribution urd = new UniformRealDistribution(model_.rng, 0, 1);
 		BufferedReader dis = new BufferedReader(new InputStreamReader(in, "UTF-8"));
@@ -267,13 +267,13 @@ public class FastText {
 				predictions.clear();
 				predict(lineString, k, predictions, urd);
 				if (predictions.isEmpty()) {
-					System.out.println(lineString + "\t" + "n/a");
+					System.out.println("n/a");
 					continue;
 				}
 				for (Pair<Float, String> pair : predictions) {
-					System.out.print(lineString + "\t" + pair.getValue());
+					System.out.print(pair.getValue());
 					if (print_prob) {
-						System.out.printf(" %.3f", pair.getKey());
+						System.out.printf(" %f", Math.exp(pair.getKey()));
 					}
 				}
 				System.out.println();
