@@ -28,7 +28,7 @@ public class Dictionary {
 	private static final String EOS = "</s>";
 	private static final String BOW = "<";
 	private static final String EOW = ">";
-	public static String LINE_SPLITTER = " ";
+	public static String LINE_SPLITTER = " |\r|\t|\\v|\f|\0";
 
 	public enum entry_type {
 		word(0), label(1);
@@ -286,7 +286,7 @@ public class Dictionary {
 				iterator.remove();
 			}
 		}
-//		words_.trimToSize();
+		// words_.trimToSize();
 		size_ = 0;
 		nwords_ = 0;
 		nlabels_ = 0;
@@ -301,7 +301,7 @@ public class Dictionary {
 				nlabels_++;
 			}
 		}
-//		word2int_.trim();
+		// word2int_.trim();
 	}
 
 	private transient Comparator<entry> entry_comparator = new Comparator<entry>() {

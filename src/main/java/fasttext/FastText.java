@@ -401,7 +401,11 @@ public class FastText {
 						if (labels.size() == 0 || line.size() == 0) {
 							continue;
 						}
-						learnUid = learnUid0.get(labels.size() - 1);
+						if (labels.size() > SUPERVISED_LABEL_SIZE) {
+							learnUid = new UniformIntegerDistribution(model.rng, 0, labels.size() - 1);
+						} else {
+							learnUid = learnUid0.get(labels.size() - 1);
+						}
 						supervised(model, lr, line, labels, learnUid);
 					} else if (args_.model == model_name.cbow) {
 						cbow(model, lr, line, learnUid);
@@ -416,7 +420,7 @@ public class FastText {
 						}
 					}
 				}
-				
+
 				if (threadId == 0 && args_.verbose > 1) {
 					printInfo(1.0f, model.getLoss());
 				}
