@@ -25,6 +25,12 @@ import org.apache.commons.math3.distribution.UniformRealDistribution;
 import fasttext.Args.model_name;
 import fasttext.Dictionary.entry_type;
 
+/**
+ * TODO: change java io to nio, to improve io speed
+ * 
+ * @author Ivan
+ *
+ */
 public class FastText {
 
 	private static int SUPERVISED_LABEL_SIZE = 10;
@@ -409,6 +415,10 @@ public class FastText {
 							printInfo(progress, model.getLoss());
 						}
 					}
+				}
+				
+				if (threadId == 0 && args_.verbose > 1) {
+					printInfo(1.0f, model.getLoss());
 				}
 			} catch (IOException e) {
 				e.printStackTrace();

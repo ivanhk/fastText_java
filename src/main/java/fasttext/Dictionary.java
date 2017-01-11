@@ -238,11 +238,15 @@ public class Dictionary {
 					continue;
 				}
 				String[] tokens = line.split(LINE_SPLITTER, -1);
-				for (int i = 0; i < tokens.length; i++) {
-					if (i == tokens.length - 1 && Utils.isEmpty(tokens[i])) {
-						tokens[i] = EOS;
+				for (int i = 0; i <= tokens.length; i++) {
+					if (i == tokens.length) {
+						add(EOS);
+					} else {
+						if (Utils.isEmpty(tokens[i])) {
+							continue;
+						}
+						add(tokens[i]);
 					}
-					add(tokens[i]);
 					if (ntokens_ % 1000000 == 0 && args_.verbose > 1) {
 						System.out.printf("\rRead %dM words", ntokens_ / 1000000);
 					}
@@ -282,6 +286,7 @@ public class Dictionary {
 				iterator.remove();
 			}
 		}
+//		words_.trimToSize();
 		size_ = 0;
 		nwords_ = 0;
 		nlabels_ = 0;
@@ -296,6 +301,7 @@ public class Dictionary {
 				nlabels_++;
 			}
 		}
+//		word2int_.trim();
 	}
 
 	private transient Comparator<entry> entry_comparator = new Comparator<entry>() {
@@ -350,17 +356,16 @@ public class Dictionary {
 		words.clear();
 		labels.clear();
 		if (tokens != null) {
-			for (int i = 0; i < tokens.length; i++) {
-				if (i == tokens.length - 1 && Utils.isEmpty(tokens[i])) {
-					tokens[i] = EOS;
+			for (int i = 0; i <= tokens.length; i++) {
+				if (i < tokens.length && Utils.isEmpty(tokens[i])) {
+					continue;
 				}
-				ntokens++;
-
-				int wid = getId(tokens[i]);
+				int wid = i == tokens.length ? getId(EOS) : getId(tokens[i]);
 				if (wid < 0) {
 					continue;
 				}
 				entry_type type = getType(wid);
+				ntokens++;
 				if (type == entry_type.word && !discard(wid, (float) urd.sample())) {
 					words.add(wid);
 				}
