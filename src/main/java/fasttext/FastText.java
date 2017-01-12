@@ -131,7 +131,7 @@ public class FastText {
 			dict_.load(dis);
 			input_.load(dis);
 			output_.load(dis);
-
+			
 			model_ = new Model(input_, output_, args_, 0);
 			if (args_.model == model_name.sup) {
 				model_.setTargetCounts(dict_.getCounts(entry_type.label));

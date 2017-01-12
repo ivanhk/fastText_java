@@ -17,7 +17,6 @@ public class Model {
 	static final int LOG_TABLE_SIZE = 512;
 
 	static final int NEGATIVE_TABLE_SIZE = 10000000;
-	// static final float MIN_LR = 0.000001f;
 
 	public class Node {
 		int parent;
@@ -51,18 +50,20 @@ public class Model {
 	public RandomGenerator rng;
 
 	public Model(Matrix wi, Matrix wo, Args args, int seed) {
-		args_ = args;
-		wi_ = new Matrix(wi);
-		wo_ = new Matrix(wo);
 		hidden_ = new Vector(args.dim);
 		output_ = new Vector(wo.m_);
 		grad_ = new Vector(args.dim);
 		rng = new Well19937c(seed);
+
+		wi_ = wi;
+		wo_ = wo;
+		args_ = args;
 		isz_ = wi.m_;
 		osz_ = wo.m_;
 		hsz_ = args.dim;
+		negpos = 0;
 		loss_ = 0.0f;
-		nexamples_ = 1;
+		nexamples_ = 1l;
 		initSigmoid();
 		initLog();
 	}
