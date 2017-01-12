@@ -1,7 +1,6 @@
 package fasttext;
 
 import java.io.BufferedReader;
-import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -400,7 +399,7 @@ public class Dictionary {
 			ofs.write(e.word.getBytes());
 			ofs.write(0);
 			ofs.write(IOUtil.longToByteArray(e.count));
-			ofs.write(e.type.value & 0xFF);
+			ofs.write(IOUtil.intToByte(e.type.value));
 		}
 	}
 
@@ -414,9 +413,9 @@ public class Dictionary {
 
 		for (int i = 0; i < size_; i++) {
 			entry e = new entry();
-			e.word = IOUtil.readString((DataInputStream) ifs);
+			e.word = IOUtil.readString(ifs);
 			e.count = IOUtil.readLong(ifs);
-			e.type = entry_type.fromValue(((DataInputStream) ifs).readByte() & 0xFF);
+			e.type = entry_type.fromValue(IOUtil.readByte(ifs));
 			words_.add(e);
 			word2int_.put(find(e.word), i);
 		}

@@ -1,6 +1,7 @@
 package fasttext;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -99,7 +100,7 @@ public class FastText {
 			System.out.println("Saving model to " + file.getCanonicalPath().toString());
 		}
 		FileOutputStream fos = new FileOutputStream(file);
-		OutputStream ofs = new DataOutputStream(fos);
+		OutputStream ofs = new BufferedOutputStream(fos);
 		try {
 			args_.save(ofs);
 			dict_.save(ofs);
@@ -349,7 +350,7 @@ public class FastText {
 			BufferedReader br = null;
 			try {
 				br = new BufferedReader(new FileReader(args_.input));
-				Utils.seek(br, threadId * threadFileSize / args_.thread);
+				Utils.seekLine(br, threadId * threadFileSize / args_.thread);
 				Model model = new Model(input_, output_, args_, threadId);
 				if (args_.model == model_name.sup) {
 					model.setTargetCounts(dict_.getCounts(entry_type.label));

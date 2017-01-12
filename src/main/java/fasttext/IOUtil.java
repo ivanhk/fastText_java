@@ -1,17 +1,21 @@
 package fasttext;
 
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
 /**
  * Read/write cpp primitive type
+ * 
  * @author Ivan
  *
  */
 public class IOUtil {
 
 	private static final int MAX_STRING_SIZE = 50;
+
+	public static int readByte(InputStream is) throws IOException {
+		return is.read() & 0xFF;
+	}
 
 	public static int readInt(InputStream is) throws IOException {
 		byte[] bytes = new byte[4];
@@ -57,16 +61,18 @@ public class IOUtil {
 		return Double.longBitsToDouble(accum);
 	}
 
-	public static String readString(DataInputStream dis) throws IOException {
+	public static String readString(InputStream is) throws IOException {
 		byte[] bytes = new byte[MAX_STRING_SIZE];
-		byte b = dis.readByte();
+		int b = is.read();
+		if (b < 0) {
+			return null;
+		}
 		int i = -1;
 		StringBuilder sb = new StringBuilder();
-		while (b != 32 && b != 10 && b != 0) { // ascii
-			i++;
-			bytes[i] = b;
-			b = dis.readByte();
-			if (i == 49) {
+		while (b > -1 && b != 32 && b != 10 && b != 0) { // ascii
+			bytes[++i] = (byte) b;
+			b = is.read();
+			if (i == MAX_STRING_SIZE - 1) {
 				sb.append(new String(bytes));
 				i = -1;
 				bytes = new byte[MAX_STRING_SIZE];
@@ -74,6 +80,10 @@ public class IOUtil {
 		}
 		sb.append(new String(bytes, 0, i + 1));
 		return sb.toString();
+	}
+
+	public static int intToByte(int i) {
+		return (i & 0xFF);
 	}
 
 	public static byte[] intToByteArray(int i) {

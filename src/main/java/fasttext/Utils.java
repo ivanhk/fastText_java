@@ -47,7 +47,7 @@ public class Utils {
 	 *            line numbers start from 1
 	 * @throws IOException
 	 */
-	public static void seek(BufferedReader br, long pos) throws IOException {
+	public static void seekLine(BufferedReader br, long pos) throws IOException {
 		// br.reset();
 		String line;
 		int currentLine = 1;
