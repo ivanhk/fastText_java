@@ -7,14 +7,34 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.RandomAccess;
 
 import org.apache.commons.math3.random.RandomGenerator;
 
 public class Utils {
 
+	/**
+	 * Ensures the truth of an expression involving one or more parameters to
+	 * the calling method.
+	 *
+	 * @param expression
+	 *            a boolean expression
+	 * @throws IllegalArgumentException
+	 *             if {@code expression} is false
+	 */
+	public static void checkArgument(boolean expression) {
+		if (!expression) {
+			throw new IllegalArgumentException();
+		}
+	}
+
 	public static boolean isEmpty(String str) {
 		return (str == null || str.isEmpty());
+	}
+	
+	public static <K, V> V mapGetOrDefault(Map<K,V> map, K key, V defaultValue) {
+	    return map.containsKey(key) ? map.get(key) : defaultValue;
 	}
 
 	public static long sizeLine(String filename) throws IOException {

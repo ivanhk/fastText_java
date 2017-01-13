@@ -7,8 +7,6 @@ import java.io.OutputStream;
 import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.apache.commons.math3.random.Well19937c;
 
-import com.google.common.base.Preconditions;
-
 public class Matrix {
 
 	public float[][] data_ = null;
@@ -53,18 +51,18 @@ public class Matrix {
 	}
 
 	public void addRow(final Vector vec, int i, float a) {
-		Preconditions.checkArgument(i >= 0);
-		Preconditions.checkArgument(i < m_);
-		Preconditions.checkArgument(vec.m_ == n_);
+		Utils.checkArgument(i >= 0);
+		Utils.checkArgument(i < m_);
+		Utils.checkArgument(vec.m_ == n_);
 		for (int j = 0; j < n_; j++) {
 			data_[i][j] += a * vec.data_[j];
 		}
 	}
 
 	public float dotRow(final Vector vec, int i) {
-		Preconditions.checkArgument(i >= 0);
-		Preconditions.checkArgument(i < m_);
-		Preconditions.checkArgument(vec.m_ == n_);
+		Utils.checkArgument(i >= 0);
+		Utils.checkArgument(i < m_);
+		Utils.checkArgument(vec.m_ == n_);
 		float d = 0.0f;
 		for (int j = 0; j < n_; j++) {
 			d += data_[i][j] * vec.data_[j];
@@ -78,9 +76,7 @@ public class Matrix {
 
 		data_ = new float[m_][n_];
 		for (int i = 0; i < m_; i++) {
-			for (int j = 0; j < n_; j++) {
-				data_[i][j] = IOUtil.readFloat(input);
-			}
+			data_[i] = IOUtil.readFloat(input, n_);
 		}
 	}
 
@@ -88,10 +84,32 @@ public class Matrix {
 		ofs.write(IOUtil.longToByteArray(m_));
 		ofs.write(IOUtil.longToByteArray(n_));
 		for (int i = 0; i < m_; i++) {
-			for (int j = 0; j < n_; j++) {
-				ofs.write(IOUtil.floatToByteArray(data_[i][j]));
-			}
+			ofs.write(IOUtil.floatToByteArray(data_[i]));
 		}
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append("Matrix [data_=");
+		if (data_ != null) {
+			builder.append("[");
+			for (int i = 0; i < m_ && i < 10; i++) {
+				for (int j = 0; j < n_ && j < 10; j++) {
+					builder.append(data_[i][j]).append(",");
+				}
+			}
+			builder.setLength(builder.length() - 1);
+			builder.append("]");
+		} else {
+			builder.append("null");
+		}
+		builder.append(", m_=");
+		builder.append(m_);
+		builder.append(", n_=");
+		builder.append(n_);
+		builder.append("]");
+		return builder.toString();
 	}
 
 }

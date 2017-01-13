@@ -4,14 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-
 public class Args {
 
 	public enum model_name {
@@ -82,20 +74,29 @@ public class Args {
 	public int verbose = 2;
 	public String pretrainedVectors = "";
 
-	public void load(InputStream input) throws IOException {
-		dim = IOUtil.readInt(input);
-		ws = IOUtil.readInt(input);
-		epoch = IOUtil.readInt(input);
-		minCount = IOUtil.readInt(input);
-		neg = IOUtil.readInt(input);
-		wordNgrams = IOUtil.readInt(input);
-		loss = loss_name.fromValue(IOUtil.readInt(input));
-		model = model_name.fromValue(IOUtil.readInt(input));
-		bucket = IOUtil.readInt(input);
-		minn = IOUtil.readInt(input);
-		maxn = IOUtil.readInt(input);
-		lrUpdateRate = IOUtil.readInt(input);
-		t = IOUtil.readDouble(input);
+	public void printHelp() {
+		System.out.println("\n" + "The following arguments are mandatory:\n"
+				+ "  -input              training file path\n" 
+				+ "  -output             output file path\n\n"
+				+ "The following arguments are optional:\n" 
+				+ "  -lr                 learning rate [" + lr + "]\n"
+				+ "  -lrUpdateRate       change the rate of updates for the learning rate [" + lrUpdateRate + "]\n"
+				+ "  -dim                size of word vectors [" + dim + "]\n"
+				+ "  -ws                 size of the context window [" + ws + "]\n"
+				+ "  -epoch              number of epochs [" + epoch + "]\n"
+				+ "  -minCount           minimal number of word occurences [" + minCount + "]\n"
+				+ "  -minCountLabel      minimal number of label occurences [" + minCountLabel + "]\n"
+				+ "  -neg                number of negatives sampled [" + neg + "]\n"
+				+ "  -wordNgrams         max length of word ngram [" + wordNgrams + "]\n"
+				+ "  -loss               loss function {ns, hs, softmax} [ns]\n"
+				+ "  -bucket             number of buckets [" + bucket + "]\n"
+				+ "  -minn               min length of char ngram [" + minn + "]\n"
+				+ "  -maxn               max length of char ngram [" + maxn + "]\n"
+				+ "  -thread             number of threads [" + thread + "]\n"
+				+ "  -t                  sampling threshold [" + t + "]\n" 
+				+ "  -label              labels prefix [" + label + "]\n" 
+				+ "  -verbose            verbosity level [" + verbose + "]\n"
+				+ "  -pretrainedVectors  pretrained word vectors for supervised learning []");
 	}
 
 	public void save(OutputStream ofs) throws IOException {
@@ -114,38 +115,20 @@ public class Args {
 		ofs.write(IOUtil.doubleToByteArray(t));
 	}
 
-	public Options getOptions() {
-		// create the Options
-		Options options = new Options();
-		options.addOption(Option.builder("input").desc("training file path").hasArg().required().build());
-		options.addOption(Option.builder("output").desc("output file path").hasArg().required().build());
-		options.addOption(Option.builder("test").desc("test file path").hasArg().build());
-		options.addOption(Option.builder("lr").desc("learning rate[" + lr + "]").hasArg().build());
-		options.addOption(Option.builder("lrUpdateRate")
-				.desc("change the rate of updates for the learning rate [" + lrUpdateRate + "]").hasArg().build());
-		options.addOption(Option.builder("dim").desc("size of word vectors [" + dim + "]").hasArg().build());
-		options.addOption(Option.builder("ws").desc("size of the context window [" + ws + "]").hasArg().build());
-		options.addOption(Option.builder("epoch").desc("number of epochs [" + epoch + "]").hasArg().build());
-		options.addOption(Option.builder("minCount").desc("minimal number of word occurences [" + minCount + "]")
-				.hasArg().build());
-		options.addOption(Option.builder("minCountLabel")
-				.desc("minimal number of label occurences [" + minCountLabel + "]").hasArg().build());
-		options.addOption(
-				Option.builder("neg").desc("number of negatives sampled [" + minCount + "]").hasArg().build());
-		options.addOption(
-				Option.builder("wordNgrams").desc("max length of word ngram [" + wordNgrams + "]").hasArg().build());
-		options.addOption(Option.builder("loss").desc("loss function {ns, hs, softmax} [ns]").hasArg().build());
-		options.addOption(Option.builder("bucket").desc("number of buckets [" + bucket + "]").hasArg().build());
-		options.addOption(Option.builder("minn").desc("min length of char ngram [" + minn + "]").hasArg().build());
-		options.addOption(Option.builder("maxn").desc("max length of char ngram [" + minn + "]").hasArg().build());
-		options.addOption(Option.builder("thread").desc("number of threads [" + thread + "]").hasArg().build());
-		options.addOption(Option.builder("t").desc("sampling threshold [" + t + "]").hasArg().build());
-		options.addOption(Option.builder("label").desc("labels prefix [" + label + "]").hasArg().build());
-		options.addOption(Option.builder("verbose").desc("verbosity level [" + label + "]").hasArg().build());
-		options.addOption(Option.builder("pretrainedVectors")
-				.desc("pretrained word vectors for supervised learning  [" + pretrainedVectors + "]").hasArg().build());
-
-		return options;
+	public void load(InputStream input) throws IOException {
+		dim = IOUtil.readInt(input);
+		ws = IOUtil.readInt(input);
+		epoch = IOUtil.readInt(input);
+		minCount = IOUtil.readInt(input);
+		neg = IOUtil.readInt(input);
+		wordNgrams = IOUtil.readInt(input);
+		loss = loss_name.fromValue(IOUtil.readInt(input));
+		model = model_name.fromValue(IOUtil.readInt(input));
+		bucket = IOUtil.readInt(input);
+		minn = IOUtil.readInt(input);
+		maxn = IOUtil.readInt(input);
+		lrUpdateRate = IOUtil.readInt(input);
+		t = IOUtil.readDouble(input);
 	}
 
 	public void parseArgs(String[] args) {
@@ -160,91 +143,135 @@ public class Args {
 		} else if ("cbow".equalsIgnoreCase(command)) {
 			model = model_name.cbow;
 		}
-		String[] fargs = new String[args.length - 1];
-		System.arraycopy(args, 1, fargs, 0, args.length - 1);
-
-		// create the command line parser
-		CommandLineParser parser = new DefaultParser();
-		Options options = getOptions();
-		try {
-			// parse the command line arguments
-			CommandLine line = parser.parse(options, fargs);
-			input = line.getOptionValue("input");
-			output = line.getOptionValue("output");
-			if (line.hasOption("test")) {
-				test = line.getOptionValue("test");
+		int ai = 1;
+		while (ai < args.length) {
+			if (args[ai].charAt(0) != '-') {
+				System.out.println("Provided argument without a dash! Usage:");
+				printHelp();
+				System.exit(1);
 			}
-			if (line.hasOption("lr")) {
-				lr = Double.parseDouble(line.getOptionValue("lr"));
-			}
-			if (line.hasOption("lrUpdateRate")) {
-				lrUpdateRate = Integer.parseInt(line.getOptionValue("lrUpdateRate"));
-			}
-			if (line.hasOption("dim")) {
-				dim = Integer.parseInt(line.getOptionValue("dim"));
-			}
-			if (line.hasOption("ws")) {
-				ws = Integer.parseInt(line.getOptionValue("ws"));
-			}
-			if (line.hasOption("epoch")) {
-				epoch = Integer.parseInt(line.getOptionValue("epoch"));
-			}
-			if (line.hasOption("minCount")) {
-				minCount = Integer.parseInt(line.getOptionValue("minCount"));
-			}
-			if (line.hasOption("minCountLabel")) {
-				minCountLabel = Integer.parseInt(line.getOptionValue("minCountLabel"));
-			}
-			if (line.hasOption("neg")) {
-				neg = Integer.parseInt(line.getOptionValue("neg"));
-			}
-			if (line.hasOption("wordNgrams")) {
-				wordNgrams = Integer.parseInt(line.getOptionValue("wordNgrams"));
-			}
-			if (line.hasOption("loss")) {
-				String lossName = line.getOptionValue("loss");
-				if ("ns".equalsIgnoreCase(lossName)) {
-					loss = loss_name.ns;
-				} else if ("hs".equalsIgnoreCase(lossName)) {
+			if ("-h".equals(args[ai])) {
+				System.out.println("Here is the help! Usage:");
+				printHelp();
+				System.exit(1);
+			} else if ("-input".equals(args[ai])) {
+				input = args[ai + 1];
+			} else if ("-test".equals(args[ai])) {
+				test = args[ai + 1];
+			} else if ("-output".equals(args[ai])) {
+				output = args[ai + 1];
+			} else if ("-lr".equals(args[ai])) {
+				lr = Double.parseDouble(args[ai + 1]);
+			} else if ("-lrUpdateRate".equals(args[ai])) {
+				lrUpdateRate = Integer.parseInt(args[ai + 1]);
+			} else if ("-dim".equals(args[ai])) {
+				dim = Integer.parseInt(args[ai + 1]);
+			} else if ("-ws".equals(args[ai])) {
+				ws = Integer.parseInt(args[ai + 1]);
+			} else if ("-epoch".equals(args[ai])) {
+				epoch = Integer.parseInt(args[ai + 1]);
+			} else if ("-minCount".equals(args[ai])) {
+				minCount = Integer.parseInt(args[ai + 1]);
+			} else if ("-minCountLabel".equals(args[ai])) {
+				minCountLabel = Integer.parseInt(args[ai + 1]);
+			} else if ("-neg".equals(args[ai])) {
+				neg = Integer.parseInt(args[ai + 1]);
+			} else if ("-wordNgrams".equals(args[ai])) {
+				wordNgrams = Integer.parseInt(args[ai + 1]);
+			} else if ("-loss".equals(args[ai])) {
+				if ("hs".equalsIgnoreCase(args[ai + 1])) {
 					loss = loss_name.hs;
-				} else if ("softmax".equalsIgnoreCase(lossName)) {
+				} else if ("ns".equalsIgnoreCase(args[ai + 1])) {
+					loss = loss_name.ns;
+				} else if ("softmax".equalsIgnoreCase(args[ai + 1])) {
 					loss = loss_name.softmax;
+				} else {
+					System.out.println("Unknown loss: " + args[ai + 1]);
+					printHelp();
+					System.exit(1);
 				}
+			} else if ("-bucket".equals(args[ai])) {
+				bucket = Integer.parseInt(args[ai + 1]);
+			} else if ("-minn".equals(args[ai])) {
+				minn = Integer.parseInt(args[ai + 1]);
+			} else if ("-maxn".equals(args[ai])) {
+				maxn = Integer.parseInt(args[ai + 1]);
+			} else if ("-thread".equals(args[ai])) {
+				thread = Integer.parseInt(args[ai + 1]);
+			} else if ("-t".equals(args[ai])) {
+				t = Double.parseDouble(args[ai + 1]);
+			} else if ("-label".equals(args[ai])) {
+				label = args[ai + 1];
+			} else if ("-verbose".equals(args[ai])) {
+				verbose = Integer.parseInt(args[ai + 1]);
+			} else if ("-pretrainedVectors".equals(args[ai])) {
+				pretrainedVectors = args[ai + 1];
+			} else {
+				System.out.println("Unknown argument: " + args[ai]);
+				printHelp();
+				System.exit(1);
 			}
-			if (line.hasOption("bucket")) {
-				bucket = Integer.parseInt(line.getOptionValue("bucket"));
-			}
-			if (line.hasOption("minn")) {
-				minn = Integer.parseInt(line.getOptionValue("minn"));
-			}
-			if (line.hasOption("maxn")) {
-				maxn = Integer.parseInt(line.getOptionValue("maxn"));
-			}
-			if (line.hasOption("thread")) {
-				thread = Integer.parseInt(line.getOptionValue("thread"));
-			}
-			if (line.hasOption("t")) {
-				t = Double.parseDouble(line.getOptionValue("t"));
-			}
-			if (line.hasOption("label")) {
-				label = line.getOptionValue("label");
-			}
-			if (line.hasOption("verbose")) {
-				verbose = Integer.parseInt(line.getOptionValue("verbose"));
-			}
-			if (line.hasOption("pretrainedVectors")) {
-				pretrainedVectors = line.getOptionValue("pretrainedVectors");
-			}
-		} catch (ParseException exp) {
-			System.out.println("Unexpected exception:" + exp.getMessage());
-			printHelp(options);
+			ai += 2;
+		}
+		if (Utils.isEmpty(input) || Utils.isEmpty(output)) {
+			System.out.println("Empty input or output path.");
+			printHelp();
 			System.exit(1);
+		}
+		if (wordNgrams <= 1 && maxn == 0) {
+			bucket = 0;
 		}
 	}
 
-	private static void printHelp(Options options) {
-		HelpFormatter formatter = new HelpFormatter();
-		formatter.printHelp("FastText", options);
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append("Args [input=");
+		builder.append(input);
+		builder.append(", output=");
+		builder.append(output);
+		builder.append(", test=");
+		builder.append(test);
+		builder.append(", lr=");
+		builder.append(lr);
+		builder.append(", lrUpdateRate=");
+		builder.append(lrUpdateRate);
+		builder.append(", dim=");
+		builder.append(dim);
+		builder.append(", ws=");
+		builder.append(ws);
+		builder.append(", epoch=");
+		builder.append(epoch);
+		builder.append(", minCount=");
+		builder.append(minCount);
+		builder.append(", minCountLabel=");
+		builder.append(minCountLabel);
+		builder.append(", neg=");
+		builder.append(neg);
+		builder.append(", wordNgrams=");
+		builder.append(wordNgrams);
+		builder.append(", loss=");
+		builder.append(loss);
+		builder.append(", model=");
+		builder.append(model);
+		builder.append(", bucket=");
+		builder.append(bucket);
+		builder.append(", minn=");
+		builder.append(minn);
+		builder.append(", maxn=");
+		builder.append(maxn);
+		builder.append(", thread=");
+		builder.append(thread);
+		builder.append(", t=");
+		builder.append(t);
+		builder.append(", label=");
+		builder.append(label);
+		builder.append(", verbose=");
+		builder.append(verbose);
+		builder.append(", pretrainedVectors=");
+		builder.append(pretrainedVectors);
+		builder.append("]");
+		return builder.toString();
 	}
 
 }

@@ -2,8 +2,6 @@ package fasttext;
 
 import java.util.Arrays;
 
-import com.google.common.base.Preconditions;
-
 public class Vector {
 
 	public int m_;
@@ -13,8 +11,8 @@ public class Vector {
 		m_ = size;
 		data_ = new float[size];
 	}
-	
-	public int size(){
+
+	public int size() {
 		return m_;
 	}
 
@@ -31,26 +29,26 @@ public class Vector {
 	}
 
 	public void addRow(final Matrix A, int i) {
-		Preconditions.checkArgument(i >= 0);
-		Preconditions.checkArgument(i < A.m_);
-		Preconditions.checkArgument(m_ == A.n_);
+		Utils.checkArgument(i >= 0);
+		Utils.checkArgument(i < A.m_);
+		Utils.checkArgument(m_ == A.n_);
 		for (int j = 0; j < A.n_; j++) { // layer size
 			data_[j] += A.data_[i][j];
 		}
 	}
 
 	public void addRow(final Matrix A, int i, float a) {
-		Preconditions.checkArgument(i >= 0);
-		Preconditions.checkArgument(i < A.m_);
-		Preconditions.checkArgument(m_ == A.n_);
+		Utils.checkArgument(i >= 0);
+		Utils.checkArgument(i < A.m_);
+		Utils.checkArgument(m_ == A.n_);
 		for (int j = 0; j < A.n_; j++) {
 			data_[j] += a * A.data_[i][j];
 		}
 	}
 
 	public void mul(final Matrix A, final Vector vec) {
-		Preconditions.checkArgument(A.m_ == m_);
-		Preconditions.checkArgument(A.n_ == vec.m_);
+		Utils.checkArgument(A.m_ == m_);
+		Utils.checkArgument(A.n_ == vec.m_);
 		for (int i = 0; i < m_; i++) {
 			data_[i] = 0.0f;
 			for (int j = 0; j < A.n_; j++) {

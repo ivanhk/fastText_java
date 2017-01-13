@@ -3,8 +3,8 @@ package fasttext;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -27,7 +27,7 @@ import fasttext.Args.model_name;
 import fasttext.Dictionary.entry_type;
 
 /**
- * TODO: change java io to nio, to improve io speed
+ * FastText class, can be used as a lib in other projects
  * 
  * @author Ivan
  *
@@ -66,7 +66,7 @@ public class FastText {
 			System.out.println("Saving Vectors to " + file.getCanonicalPath().toString());
 		}
 
-		Writer writer = new FileWriter(file);
+		Writer writer = new BufferedWriter(new FileWriter(file));
 		try {
 			writer.write(dict_.nwords());
 			writer.write(" ");
@@ -99,8 +99,7 @@ public class FastText {
 		if (args_.verbose > 1) {
 			System.out.println("Saving model to " + file.getCanonicalPath().toString());
 		}
-		FileOutputStream fos = new FileOutputStream(file);
-		OutputStream ofs = new BufferedOutputStream(fos);
+		OutputStream ofs = new BufferedOutputStream(new FileOutputStream(file));
 		try {
 			args_.save(ofs);
 			dict_.save(ofs);
@@ -132,7 +131,7 @@ public class FastText {
 			dict_.load(dis);
 			input_.load(dis);
 			output_.load(dis);
-			
+
 			model_ = new Model(input_, output_, args_, 0);
 			if (args_.model == model_name.sup) {
 				model_.setTargetCounts(dict_.getCounts(entry_type.label));
@@ -460,7 +459,7 @@ public class FastText {
 			dis = new BufferedReader(new InputStreamReader(fis, "UTF-8"));
 
 			n = dis.read();
-			dis.read();
+			dis.read(); // read ' '
 			dim = dis.read();
 			dis.read(); // read '\n'
 
@@ -566,6 +565,26 @@ public class FastText {
 		if (args_.model != model_name.sup) {
 			saveVectors();
 		}
+	}
+
+	public Args getArgs_() {
+		return args_;
+	}
+
+	public Dictionary getDict_() {
+		return dict_;
+	}
+
+	public Matrix getInput_() {
+		return input_;
+	}
+
+	public Matrix getOutput_() {
+		return output_;
+	}
+
+	public Model getModel_() {
+		return model_;
 	}
 
 }

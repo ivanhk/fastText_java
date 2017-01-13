@@ -8,7 +8,6 @@ import org.apache.commons.math3.random.Well19937c;
 
 import fasttext.Args.loss_name;
 import fasttext.Args.model_name;
-import com.google.common.base.Preconditions;
 
 public class Model {
 
@@ -33,6 +32,7 @@ public class Model {
 	private Vector output_;
 	private Vector grad_;
 	private int hsz_; // dim
+	@SuppressWarnings("unused")
 	private int isz_; // input vocabSize
 	private int osz_; // output vocabSize
 	private float loss_;
@@ -136,7 +136,7 @@ public class Model {
 	}
 
 	public void computeHidden(final java.util.Vector<Integer> input, Vector hidden) {
-		Preconditions.checkArgument(hidden.size() == hsz_);
+		Utils.checkArgument(hidden.size() == hsz_);
 		hidden.zero();
 		for (Integer it : input) {
 			hidden.addRow(wi_, it);
@@ -154,7 +154,7 @@ public class Model {
 
 	public void predict(final java.util.Vector<Integer> input, int k, java.util.Vector<Pair<Float, Integer>> heap,
 			Vector hidden, Vector output) {
-		Preconditions.checkArgument(k > 0);
+		Utils.checkArgument(k > 0);
 		heap.ensureCapacity(k + 1);
 		computeHidden(input, hidden);
 		if (args_.loss == loss_name.hs) {
@@ -203,8 +203,8 @@ public class Model {
 	}
 
 	public void update(final java.util.Vector<Integer> input, int target, float lr) {
-		Preconditions.checkArgument(target >= 0);
-		Preconditions.checkArgument(target < osz_);
+		Utils.checkArgument(target >= 0);
+		Utils.checkArgument(target < osz_);
 		if (input.size() == 0) {
 			return;
 		}
@@ -228,7 +228,7 @@ public class Model {
 	}
 
 	public void setTargetCounts(final java.util.Vector<Long> counts) {
-		Preconditions.checkArgument(counts.size() == osz_);
+		Utils.checkArgument(counts.size() == osz_);
 		if (args_.loss == loss_name.ns) {
 			initTableNegatives(counts);
 		}

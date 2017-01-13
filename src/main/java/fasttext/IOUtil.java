@@ -44,6 +44,18 @@ public class IOUtil {
 		return getFloat(bytes);
 	}
 
+	public static float[] readFloat(InputStream is, int size) throws IOException {
+		float[] fs = new float[size];
+		byte[] buf = new byte[size * 4];
+		is.read(buf);
+		byte[] bytes = new byte[4];
+		for (int i = 0; i < size; i++) {
+			System.arraycopy(buf, i * 4, bytes, 0, 4);
+			fs[i] = getFloat(bytes);
+		}
+		return fs;
+	}
+
 	public static float getFloat(byte[] b) {
 		int accum = (b[0] & 0xFF) << 0 | (b[1] & 0xFF) << 8 | (b[2] & 0xFF) << 16 | (b[3] & 0xFF) << 24;
 		return Float.intBitsToFloat(accum);
@@ -100,6 +112,14 @@ public class IOUtil {
 	public static byte[] floatToByteArray(float f) {
 		int i = Float.floatToIntBits(f);
 		return intToByteArray(i);
+	}
+
+	public static byte[] floatToByteArray(float[] f) {
+		byte[] buf = new byte[f.length * 4];
+		for (int i = 0; i < f.length; i++) {
+			System.arraycopy(floatToByteArray(f[i]), 0, buf, i * 4, 4);
+		}
+		return buf;
 	}
 
 	public static byte[] doubleToByteArray(double d) {

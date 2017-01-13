@@ -8,21 +8,20 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Vector;
 
 import org.apache.commons.math3.distribution.UniformRealDistribution;
 
 import fasttext.Args.model_name;
-import com.google.common.base.Preconditions;
-import com.google.common.primitives.UnsignedInteger;
-
-import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 
 public class Dictionary {
 
 	private static final int MAX_VOCAB_SIZE = 30000000;
 	private static final int MAX_LINE_SIZE = 1024;
+	private static final Integer WORDID_DEFAULT = -1;
 
 	private static final String EOS = "</s>";
 	private static final String BOW = "<";
@@ -61,11 +60,27 @@ public class Dictionary {
 		long count;
 		entry_type type;
 		Vector<Integer> subwords;
+
+		@Override
+		public String toString() {
+			StringBuilder builder = new StringBuilder();
+			builder.append("entry [word=");
+			builder.append(word);
+			builder.append(", count=");
+			builder.append(count);
+			builder.append(", type=");
+			builder.append(type);
+			builder.append(", subwords=");
+			builder.append(subwords);
+			builder.append("]");
+			return builder.toString();
+		}
+
 	}
 
 	private Vector<entry> words_;
 	private Vector<Float> pdiscard_;
-	private Long2IntOpenHashMap word2int_;
+	private Map<Long, Integer> word2int_;
 	private int size_;
 	private int nwords_;
 	private int nlabels_;
@@ -79,15 +94,15 @@ public class Dictionary {
 		nwords_ = 0;
 		nlabels_ = 0;
 		ntokens_ = 0;
-		word2int_ = new Long2IntOpenHashMap(MAX_VOCAB_SIZE);
-		((Long2IntOpenHashMap) word2int_).defaultReturnValue(-1);
+		word2int_ = new HashMap<Long, Integer>(MAX_VOCAB_SIZE);
 		words_ = new Vector<entry>(MAX_VOCAB_SIZE);
 	}
 
 	public long find(final String w) {
 		long h = hash(w) % MAX_VOCAB_SIZE;
 		entry e = null;
-		while (word2int_.get(h) != -1 && ((e = words_.get(word2int_.get(h))) != null && !w.equals(e.word))) {
+		while (Utils.mapGetOrDefault(word2int_, h, WORDID_DEFAULT) != WORDID_DEFAULT
+				&& ((e = words_.get(word2int_.get(h))) != null && !w.equals(e.word))) {
 			h = (h + 1) % MAX_VOCAB_SIZE;
 		}
 		return h;
@@ -96,7 +111,7 @@ public class Dictionary {
 	public void add(final String w) {
 		long h = find(w);
 		ntokens_++;
-		if (word2int_.get(h) == -1) {
+		if (Utils.mapGetOrDefault(word2int_, h, WORDID_DEFAULT) == WORDID_DEFAULT) {
 			entry e = new entry();
 			e.word = w;
 			e.count = 1;
@@ -121,8 +136,8 @@ public class Dictionary {
 	}
 
 	public final Vector<Integer> getNgrams(int i) {
-		Preconditions.checkArgument(i >= 0);
-		Preconditions.checkArgument(i < nwords_);
+		Utils.checkArgument(i >= 0);
+		Utils.checkArgument(i < nwords_);
 		return words_.get(i).subwords;
 	}
 
@@ -138,8 +153,8 @@ public class Dictionary {
 	}
 
 	public boolean discard(int id, float rand) {
-		Preconditions.checkArgument(id >= 0);
-		Preconditions.checkArgument(id < nwords_);
+		Utils.checkArgument(id >= 0);
+		Utils.checkArgument(id < nwords_);
 		if (args_.model == model_name.sup)
 			return false;
 		return rand > pdiscard_.get(id);
@@ -147,18 +162,18 @@ public class Dictionary {
 
 	public int getId(final String w) {
 		long h = find(w);
-		return word2int_.get(h);
+		return Utils.mapGetOrDefault(word2int_, h, WORDID_DEFAULT);
 	}
 
 	public entry_type getType(int id) {
-		Preconditions.checkArgument(id >= 0);
-		Preconditions.checkArgument(id < size_);
+		Utils.checkArgument(id >= 0);
+		Utils.checkArgument(id < size_);
 		return words_.get(id).type;
 	}
 
 	public String getWord(int id) {
-		Preconditions.checkArgument(id >= 0);
-		Preconditions.checkArgument(id < size_);
+		Utils.checkArgument(id >= 0);
+		Utils.checkArgument(id < size_);
 		return words_.get(id).word;
 	}
 
@@ -174,7 +189,7 @@ public class Dictionary {
 			h = (h ^ strByte) * 16777619; // FNV-1a
 			// h = (h * 16777619) ^ strByte; //FNV-1
 		}
-		return UnsignedInteger.fromIntBits(h).longValue();
+		return h & 0xffffffffL;
 	}
 
 	public void computeNgrams(final String word, Vector<Integer> ngrams) {
@@ -383,8 +398,8 @@ public class Dictionary {
 	}
 
 	public String getLabel(int lid) {
-		Preconditions.checkArgument(lid >= 0);
-		Preconditions.checkArgument(lid < nlabels_);
+		Utils.checkArgument(lid >= 0);
+		Utils.checkArgument(lid < nlabels_);
 		return words_.get(lid + nwords_).word;
 	}
 
@@ -423,6 +438,27 @@ public class Dictionary {
 		if (model_name.cbow == args_.model || model_name.sg == args_.model) {
 			initNgrams();
 		}
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append("Dictionary [words_=");
+		builder.append(words_);
+		builder.append(", pdiscard_=");
+		builder.append(pdiscard_);
+		builder.append(", word2int_=");
+		builder.append(word2int_);
+		builder.append(", size_=");
+		builder.append(size_);
+		builder.append(", nwords_=");
+		builder.append(nwords_);
+		builder.append(", nlabels_=");
+		builder.append(nlabels_);
+		builder.append(", ntokens_=");
+		builder.append(ntokens_);
+		builder.append("]");
+		return builder.toString();
 	}
 
 }
