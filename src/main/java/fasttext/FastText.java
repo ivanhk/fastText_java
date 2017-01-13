@@ -15,12 +15,8 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.apache.commons.math3.distribution.UniformIntegerDistribution;
-import org.apache.commons.math3.distribution.UniformRealDistribution;
 
 import fasttext.Args.model_name;
 import fasttext.Dictionary.entry_type;
@@ -32,8 +28,6 @@ import fasttext.Dictionary.entry_type;
  *
  */
 public class FastText {
-
-	private static int SUPERVISED_LABEL_SIZE = 10;
 
 	private Args args_;
 	private Dictionary dict_;
@@ -152,19 +146,17 @@ public class FastText {
 	}
 
 	public void supervised(Model model, float lr, final java.util.Vector<Integer> line,
-			final java.util.Vector<Integer> labels, UniformIntegerDistribution uid) {
+			final java.util.Vector<Integer> labels) {
 		if (labels.size() == 0 || line.size() == 0)
 			return;
-		// std::uniform_int_distribution<> uniform(0, labels.size() - 1);
-		int i = uid.sample();
+		int i = Utils.randomInt(model.rng, 1, labels.size()) - 1;
 		model.update(line, labels.get(i), lr);
 	}
 
-	public void cbow(Model model, float lr, final java.util.Vector<Integer> line, UniformIntegerDistribution uid) {
+	public void cbow(Model model, float lr, final java.util.Vector<Integer> line) {
 		java.util.Vector<Integer> bow = new java.util.Vector<Integer>();
 		for (int w = 0; w < line.size(); w++) {
-			// std::uniform_int_distribution<> uniform(1, args_->ws);
-			int boundary = uid.sample();
+			int boundary = Utils.randomInt(model.rng, 1, args_.ws);
 			bow.clear();
 			for (int c = -boundary; c <= boundary; c++) {
 				if (c != 0 && w + c >= 0 && w + c < line.size()) {
@@ -176,10 +168,9 @@ public class FastText {
 		}
 	}
 
-	public void skipgram(Model model, float lr, final java.util.Vector<Integer> line, UniformIntegerDistribution uid) {
+	public void skipgram(Model model, float lr, final java.util.Vector<Integer> line) {
 		for (int w = 0; w < line.size(); w++) {
-			// std::uniform_int_distribution<> uniform(1, args_->ws);
-			int boundary = uid.sample();
+			int boundary = Utils.randomInt(model.rng, 1, args_.ws);
 			final java.util.Vector<Integer> ngrams = dict_.getNgrams(line.get(w));
 			for (int c = -boundary; c <= boundary; c++) {
 				if (c != 0 && w + c >= 0 && w + c < line.size()) {
@@ -195,7 +186,6 @@ public class FastText {
 		java.util.Vector<Integer> line = new java.util.Vector<Integer>();
 		java.util.Vector<Integer> labels = new java.util.Vector<Integer>();
 
-		UniformRealDistribution urd = new UniformRealDistribution(model_.rng, 0, 1);
 		BufferedReader dis = new BufferedReader(new InputStreamReader(in, "UTF-8"));
 		try {
 			String lineString;
@@ -206,7 +196,7 @@ public class FastText {
 				if ("quit".equals(lineString)) {
 					break;
 				}
-				dict_.getLine(lineString, line, labels, urd);
+				dict_.getLine(lineString, line, labels, model_.rng);
 				dict_.addNgrams(line, args_.wordNgrams);
 				if (labels.size() > 0 && line.size() > 0) {
 					java.util.Vector<Pair<Float, Integer>> modelPredictions = new java.util.Vector<Pair<Float, Integer>>();
@@ -232,8 +222,8 @@ public class FastText {
 		System.out.println("Number of examples: " + nexamples);
 	}
 
-	public void predict(String line, int k, java.util.Vector<Pair<Float, String>> predictions,
-			UniformRealDistribution urd) throws IOException {
+	public void predict(String line, int k, java.util.Vector<Pair<Float, String>> predictions, Random urd)
+			throws IOException {
 		java.util.Vector<Integer> words = new java.util.Vector<Integer>();
 		java.util.Vector<Integer> labels = new java.util.Vector<Integer>();
 		dict_.getLine(line, words, labels, urd);
@@ -255,7 +245,6 @@ public class FastText {
 	public void predict(InputStream in, int k, boolean print_prob) throws IOException {
 		java.util.Vector<Pair<Float, String>> predictions = new java.util.Vector<Pair<Float, String>>(k);
 
-		UniformRealDistribution urd = new UniformRealDistribution(model_.rng, 0, 1);
 		BufferedReader dis = new BufferedReader(new InputStreamReader(in, "UTF-8"));
 		try {
 			String lineString;
@@ -267,7 +256,7 @@ public class FastText {
 					break;
 				}
 				predictions.clear();
-				predict(lineString, k, predictions, urd);
+				predict(lineString, k, predictions, model_.rng);
 				if (predictions.isEmpty()) {
 					System.out.println("n/a");
 					continue;
@@ -301,13 +290,12 @@ public class FastText {
 	public void textVectors() {
 		java.util.Vector<Integer> line = new java.util.Vector<Integer>();
 		java.util.Vector<Integer> labels = new java.util.Vector<Integer>();
-		UniformRealDistribution urd = new UniformRealDistribution(model_.rng, 0, 1);
 		Vector vec = new Vector(args_.dim);
 		@SuppressWarnings("resource")
 		java.util.Scanner scanner = new java.util.Scanner(System.in);
 		String word = scanner.nextLine();
 		while (!Utils.isEmpty(word)) {
-			dict_.getLine(word, line, labels, urd);
+			dict_.getLine(word, line, labels, model_.rng);
 			dict_.addNgrams(line, args_.wordNgrams);
 			vec.zero();
 			for (Integer it : line) {
@@ -358,17 +346,6 @@ public class FastText {
 
 				java.util.Vector<Integer> line = new java.util.Vector<Integer>();
 				java.util.Vector<Integer> labels = new java.util.Vector<Integer>();
-				UniformRealDistribution urd = new UniformRealDistribution(model.rng, 0, 1);
-
-				UniformIntegerDistribution learnUid = null;
-				List<UniformIntegerDistribution> learnUid0 = new ArrayList<UniformIntegerDistribution>();
-				if (args_.model == model_name.sup) {
-					for (int i = 0; i <= SUPERVISED_LABEL_SIZE; i++) {
-						learnUid0.add(new UniformIntegerDistribution(model.rng, 0, i));
-					}
-				} else if (args_.model == model_name.cbow || args_.model == model_name.sg) {
-					learnUid = new UniformIntegerDistribution(model.rng, 1, args_.ws);
-				}
 
 				String lineString;
 				while (tokenCount.get() < args_.epoch * ntokens) {
@@ -391,22 +368,17 @@ public class FastText {
 
 					float progress = (float) (tokenCount.get()) / (args_.epoch * ntokens);
 					float lr = (float) (args_.lr * (1.0 - progress));
-					localTokenCount += dict_.getLine(lineString, line, labels, urd);
+					localTokenCount += dict_.getLine(lineString, line, labels, model.rng);
 					if (args_.model == model_name.sup) {
 						dict_.addNgrams(line, args_.wordNgrams);
 						if (labels.size() == 0 || line.size() == 0) {
 							continue;
 						}
-						if (labels.size() > SUPERVISED_LABEL_SIZE) {
-							learnUid = new UniformIntegerDistribution(model.rng, 0, labels.size() - 1);
-						} else {
-							learnUid = learnUid0.get(labels.size() - 1);
-						}
-						supervised(model, lr, line, labels, learnUid);
+						supervised(model, lr, line, labels);
 					} else if (args_.model == model_name.cbow) {
-						cbow(model, lr, line, learnUid);
+						cbow(model, lr, line);
 					} else if (args_.model == model_name.sg) {
-						skipgram(model, lr, line, learnUid);
+						skipgram(model, lr, line);
 					}
 					if (localTokenCount > args_.lrUpdateRate) {
 						tokenCount.addAndGet(localTokenCount);

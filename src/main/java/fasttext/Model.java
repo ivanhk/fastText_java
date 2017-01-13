@@ -2,9 +2,7 @@ package fasttext;
 
 import java.util.Collections;
 import java.util.Comparator;
-
-import org.apache.commons.math3.random.RandomGenerator;
-import org.apache.commons.math3.random.Well19937c;
+import java.util.Random;
 
 import fasttext.Args.loss_name;
 import fasttext.Args.model_name;
@@ -47,13 +45,13 @@ public class Model {
 	private java.util.Vector<java.util.Vector<Boolean>> codes;
 	private java.util.Vector<Node> tree;
 
-	public RandomGenerator rng;
+	public transient Random rng;
 
 	public Model(Matrix wi, Matrix wo, Args args, int seed) {
 		hidden_ = new Vector(args.dim);
 		output_ = new Vector(wo.m_);
 		grad_ = new Vector(args.dim);
-		rng = new Well19937c(seed);
+		rng = Utils.getCachedRandom((long) seed);
 
 		wi_ = wi;
 		wo_ = wo;

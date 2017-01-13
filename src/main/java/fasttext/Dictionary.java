@@ -11,9 +11,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Random;
 import java.util.Vector;
-
-import org.apache.commons.math3.distribution.UniformRealDistribution;
 
 import fasttext.Args.model_name;
 
@@ -357,7 +356,7 @@ public class Dictionary {
 		}
 	}
 
-	public int getLine(String line, Vector<Integer> words, Vector<Integer> labels, UniformRealDistribution urd) {
+	public int getLine(String line, Vector<Integer> words, Vector<Integer> labels, Random urd) {
 		if (!Utils.isEmpty(line)) {
 			String[] tokens = line.split(LINE_SPLITTER, -1);
 			return getLine(tokens, words, labels, urd);
@@ -365,7 +364,7 @@ public class Dictionary {
 		return 0;
 	}
 
-	public int getLine(String[] tokens, Vector<Integer> words, Vector<Integer> labels, UniformRealDistribution urd) {
+	public int getLine(String[] tokens, Vector<Integer> words, Vector<Integer> labels, Random urd) {
 		int ntokens = 0;
 		words.clear();
 		labels.clear();
@@ -380,7 +379,7 @@ public class Dictionary {
 				}
 				entry_type type = getType(wid);
 				ntokens++;
-				if (type == entry_type.word && !discard(wid, (float) urd.sample())) {
+				if (type == entry_type.word && !discard(wid, Utils.randomFloat(urd, 0, 1))) {
 					words.add(wid);
 				}
 				if (type == entry_type.label) {

@@ -5,12 +5,13 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.ref.WeakReference;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Random;
 import java.util.RandomAccess;
-
-import org.apache.commons.math3.random.RandomGenerator;
+import java.util.WeakHashMap;
 
 public class Utils {
 
@@ -29,12 +30,47 @@ public class Utils {
 		}
 	}
 
+	public static void checkArgument(boolean expression, String message) {
+		if (!expression) {
+			throw new IllegalArgumentException(message);
+		}
+	}
+
 	public static boolean isEmpty(String str) {
 		return (str == null || str.isEmpty());
 	}
-	
-	public static <K, V> V mapGetOrDefault(Map<K,V> map, K key, V defaultValue) {
-	    return map.containsKey(key) ? map.get(key) : defaultValue;
+
+	public static <K, V> V mapGetOrDefault(Map<K, V> map, K key, V defaultValue) {
+		return map.containsKey(key) ? map.get(key) : defaultValue;
+	}
+
+	private static WeakHashMap<Long, WeakReference<Random>> seed_Random_Cache = null;
+
+	public static Random getCachedRandom(Long seed) {
+		if (seed_Random_Cache == null) {
+			seed_Random_Cache = new WeakHashMap<Long, WeakReference<Random>>();
+		}
+		final WeakReference<Random> cached = seed_Random_Cache.get(seed);
+		if (cached != null) {
+			final Random value = cached.get();
+			if (value != null) {
+				return value;
+			}
+		}
+		Random rnd = new Random(seed);
+		seed_Random_Cache.put(seed, new WeakReference<Random>(rnd));
+		return rnd;
+
+	}
+
+	public static int randomInt(Random rnd, int lower, int upper) {
+		checkArgument(lower <= upper, "randomInt lower=" + lower + ", upper=" + upper);
+		return rnd.nextInt(upper - lower) + lower;
+	}
+
+	public static float randomFloat(Random rnd, float lower, float upper) {
+		checkArgument(lower <= upper, "randomFloat lower=" + lower + ", upper=" + upper);
+		return (rnd.nextFloat() * (upper - lower)) + lower;
 	}
 
 	public static long sizeLine(String filename) throws IOException {
@@ -82,7 +118,7 @@ public class Utils {
 	private static final int SHUFFLE_THRESHOLD = 5;
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public static void shuffle(List<?> list, RandomGenerator rnd) {
+	public static void shuffle(List<?> list, Random rnd) {
 		int size = list.size();
 		if (size < SHUFFLE_THRESHOLD || list instanceof RandomAccess) {
 			for (int i = size; i > 1; i--)

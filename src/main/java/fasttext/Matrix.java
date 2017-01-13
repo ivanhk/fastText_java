@@ -4,9 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import org.apache.commons.math3.distribution.UniformRealDistribution;
-import org.apache.commons.math3.random.Well19937c;
-
 public class Matrix {
 
 	public float[][] data_ = null;
@@ -42,10 +39,9 @@ public class Matrix {
 	}
 
 	public void uniform(float a) {
-		UniformRealDistribution urd = new UniformRealDistribution(new Well19937c(1), -a, a);
 		for (int i = 0; i < m_; i++) {
 			for (int j = 0; j < n_; j++) {
-				data_[i][j] = (float) urd.sample();
+				data_[i][j] = Utils.randomFloat(Utils.getCachedRandom(1l), -a, a);
 			}
 		}
 	}
