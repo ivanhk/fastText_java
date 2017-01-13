@@ -64,12 +64,18 @@ public class Utils {
 	}
 
 	public static int randomInt(Random rnd, int lower, int upper) {
-		checkArgument(lower <= upper, "randomInt lower=" + lower + ", upper=" + upper);
+		checkArgument(lower < upper & lower > 0, "randomInt lower=" + lower + ", upper=" + upper);
+		if (lower == upper) {
+			return lower;
+		}
 		return rnd.nextInt(upper - lower) + lower;
 	}
 
 	public static float randomFloat(Random rnd, float lower, float upper) {
-		checkArgument(lower <= upper, "randomFloat lower=" + lower + ", upper=" + upper);
+		checkArgument(lower < upper, "randomFloat lower=" + lower + ", upper=" + upper);
+		if (lower == upper) {
+			return lower;
+		}
 		return (rnd.nextFloat() * (upper - lower)) + lower;
 	}
 
