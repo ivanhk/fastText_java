@@ -3,17 +3,16 @@ package fasttext;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -66,19 +65,16 @@ public class FastText {
 			System.out.println("Saving Vectors to " + file.getCanonicalPath().toString());
 		}
 
-		Writer writer = new BufferedWriter(new FileWriter(file));
+		Vector vec = new Vector(args_.dim);
+		DecimalFormat df = new DecimalFormat("0.#####");
+		Writer writer = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(file)), "UTF-8");
 		try {
-			writer.write(dict_.nwords());
-			writer.write(" ");
-			writer.write(args_.dim);
-			writer.write("\n");
-			Vector vec = new Vector(args_.dim);
-			DecimalFormat df = new DecimalFormat("0.#####");
+			writer.write(dict_.nwords() + " " + args_.dim + "\n");
 			for (int i = 0; i < dict_.nwords(); i++) {
 				String word = dict_.getWord(i);
 				getVector(vec, word);
 				writer.write(word);
-				for (int j = 0; i < vec.m_; i++) {
+				for (int j = 0; j < vec.m_; j++) {
 					writer.write(" ");
 					writer.write(df.format(vec.data_[j]));
 				}
@@ -451,17 +447,17 @@ public class FastText {
 		java.util.Vector<String> words = new java.util.Vector<String>();
 		Matrix mat; // temp. matrix for pretrained vectors
 		int n, dim;
-		FileInputStream fis = null;
+
 		BufferedReader dis = null;
-
+		String line;
+		String[] lineParts;
 		try {
-			fis = new FileInputStream(filename);
-			dis = new BufferedReader(new InputStreamReader(fis, "UTF-8"));
+			dis = new BufferedReader(new InputStreamReader(new FileInputStream(filename), "UTF-8"));
 
-			n = dis.read();
-			dis.read(); // read ' '
-			dim = dis.read();
-			dis.read(); // read '\n'
+			line = dis.readLine();
+			lineParts = line.split(" ");
+			n = Integer.parseInt(lineParts[0]);
+			dim = Integer.parseInt(lineParts[1]);
 
 			if (dim != args_.dim) {
 				System.err.println("Dimension of pretrained vectors does not match -dim option");
@@ -470,12 +466,12 @@ public class FastText {
 
 			mat = new Matrix(n, dim);
 			for (int i = 0; i < n; i++) {
-				String line = dis.readLine();
-				for (int j = dim - 1; j >= 0; j--) {
-					mat.data_[i][j] = Float.parseFloat(line.substring(line.lastIndexOf(" ") + 1, line.length()));
-					line = line.substring(0, line.lastIndexOf(" "));
+				line = dis.readLine();
+				lineParts = line.split(" ");
+				String word = lineParts[0];
+				for (int j = 1; j <= dim; j++) {
+					mat.data_[i][j - 1] = Float.parseFloat(lineParts[j]);
 				}
-				String word = line.substring(0, line.lastIndexOf(" "));
 				words.add(word);
 				dict_.add(word);
 			}
@@ -496,10 +492,9 @@ public class FastText {
 			throw new IOException("Pretrained vectors file cannot be opened!", e);
 		} finally {
 			try {
-				if (dis != null)
+				if (dis != null) {
 					dis.close();
-				if (fis != null)
-					fis.close();
+				}
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -585,6 +580,26 @@ public class FastText {
 
 	public Model getModel_() {
 		return model_;
+	}
+
+	public void setArgs_(Args args_) {
+		this.args_ = args_;
+	}
+
+	public void setDict_(Dictionary dict_) {
+		this.dict_ = dict_;
+	}
+
+	public void setInput_(Matrix input_) {
+		this.input_ = input_;
+	}
+
+	public void setOutput_(Matrix output_) {
+		this.output_ = output_;
+	}
+
+	public void setModel_(Model model_) {
+		this.model_ = model_;
 	}
 
 }

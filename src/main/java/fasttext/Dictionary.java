@@ -300,7 +300,7 @@ public class Dictionary {
 				iterator.remove();
 			}
 		}
-		// words_.trimToSize();
+		words_.trimToSize();
 		size_ = 0;
 		nwords_ = 0;
 		nlabels_ = 0;
