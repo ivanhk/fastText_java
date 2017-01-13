@@ -101,6 +101,12 @@ public class FastText {
 		}
 	}
 
+	/**
+	 * Load binary model file. 
+	 * Set Dictionary LineProcessor afterward if needed.
+	 * @param filename
+	 * @throws IOException
+	 */
 	public void loadModel(String filename) throws IOException {
 		DataInputStream dis = null;
 		BufferedInputStream bis = null;
@@ -477,9 +483,15 @@ public class FastText {
 	long threadFileSize;
 
 	public void train(Args args) throws IOException {
+		train(args, null);
+	}
+
+	public void train(Args args, Dictionary.LineProcessor lineProcessor) throws IOException {
 		args_ = args;
 		dict_ = new Dictionary(args_);
-
+		if (lineProcessor != null) {
+			dict_.setLineProcessor(lineProcessor);
+		}
 		if ("-".equals(args_.input)) {
 			throw new IOException("Cannot use stdin for training!");
 		}

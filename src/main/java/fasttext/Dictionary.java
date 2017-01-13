@@ -25,7 +25,6 @@ public class Dictionary {
 	private static final String EOS = "</s>";
 	private static final String BOW = "<";
 	private static final String EOW = ">";
-	public static String LINE_SPLITTER = " |\r|\t|\\v|\f|\0";
 
 	public enum entry_type {
 		word(0), label(1);
@@ -86,6 +85,8 @@ public class Dictionary {
 	private long ntokens_;
 
 	private Args args_;
+
+	private LineProcessor lineProcessor = new LineProcessor();
 
 	public Dictionary(Args args) {
 		args_ = args;
@@ -250,7 +251,7 @@ public class Dictionary {
 				if (Utils.isEmpty(line) || line.startsWith("#")) {
 					continue;
 				}
-				String[] tokens = line.split(LINE_SPLITTER, -1);
+				String[] tokens = lineProcessor.getTokens(line);
 				for (int i = 0; i <= tokens.length; i++) {
 					if (i == tokens.length) {
 						add(EOS);
@@ -358,7 +359,7 @@ public class Dictionary {
 
 	public int getLine(String line, Vector<Integer> words, Vector<Integer> labels, Random urd) {
 		if (!Utils.isEmpty(line)) {
-			String[] tokens = line.split(LINE_SPLITTER, -1);
+			String[] tokens = lineProcessor.getTokens(line);
 			return getLine(tokens, words, labels, urd);
 		}
 		return 0;
@@ -458,6 +459,42 @@ public class Dictionary {
 		builder.append(ntokens_);
 		builder.append("]");
 		return builder.toString();
+	}
+
+	public static class LineProcessor {
+		public String LINE_SPLITTER = " |\r|\t|\\v|\f|\0";
+
+		public String[] getTokens(String line) {
+			return line.split(LINE_SPLITTER, -1);
+		}
+	}
+
+	public LineProcessor getLineProcessor() {
+		return lineProcessor;
+	}
+
+	public void setLineProcessor(LineProcessor lineProcessor) {
+		this.lineProcessor = lineProcessor;
+	}
+
+	public Vector<entry> getWords_() {
+		return words_;
+	}
+
+	public Vector<Float> getPdiscard_() {
+		return pdiscard_;
+	}
+
+	public Map<Long, Integer> getWord2int_() {
+		return word2int_;
+	}
+
+	public int getSize_() {
+		return size_;
+	}
+
+	public Args getArgs_() {
+		return args_;
 	}
 
 }
