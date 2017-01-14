@@ -11,7 +11,7 @@ import java.io.InputStream;
  */
 public class IOUtil {
 
-	private static final int MAX_STRING_SIZE = 50;
+	private static final int STRING_BUF_SIZE = 50;
 
 	public static int readByte(InputStream is) throws IOException {
 		return is.read() & 0xFF;
@@ -74,20 +74,21 @@ public class IOUtil {
 	}
 
 	public static String readString(InputStream is) throws IOException {
-		byte[] bytes = new byte[MAX_STRING_SIZE];
+		byte[] bytes = new byte[STRING_BUF_SIZE];
 		int b = is.read();
 		if (b < 0) {
 			return null;
 		}
 		int i = -1;
 		StringBuilder sb = new StringBuilder();
-		while (b > -1 && b != 32 && b != 10 && b != 0) { // ascii
+		 // ascii space, \n, \0
+		while (b > -1 && b != 32 && b != 10 && b != 0) {
 			bytes[++i] = (byte) b;
 			b = is.read();
-			if (i == MAX_STRING_SIZE - 1) {
+			if (i == STRING_BUF_SIZE - 1) {
 				sb.append(new String(bytes));
 				i = -1;
-				bytes = new byte[MAX_STRING_SIZE];
+				bytes = new byte[STRING_BUF_SIZE];
 			}
 		}
 		sb.append(new String(bytes, 0, i + 1));

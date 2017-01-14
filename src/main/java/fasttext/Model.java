@@ -51,7 +51,7 @@ public class Model {
 		hidden_ = new Vector(args.dim);
 		output_ = new Vector(wo.m_);
 		grad_ = new Vector(args.dim);
-		rng = Utils.getCachedRandom((long) seed);
+		rng = new Random((long) seed);
 
 		wi_ = wi;
 		wo_ = wo;

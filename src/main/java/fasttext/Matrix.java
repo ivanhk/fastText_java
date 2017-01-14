@@ -3,6 +3,7 @@ package fasttext;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Random;
 
 public class Matrix {
 
@@ -41,7 +42,7 @@ public class Matrix {
 	public void uniform(float a) {
 		for (int i = 0; i < m_; i++) {
 			for (int j = 0; j < n_; j++) {
-				data_[i][j] = Utils.randomFloat(Utils.getCachedRandom(1l), -a, a);
+				data_[i][j] = Utils.randomFloat(new Random(1l), -a, a);
 			}
 		}
 	}
