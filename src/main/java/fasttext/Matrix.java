@@ -40,9 +40,10 @@ public class Matrix {
 	}
 
 	public void uniform(float a) {
+		Random random = new Random(1l);
 		for (int i = 0; i < m_; i++) {
 			for (int j = 0; j < n_; j++) {
-				data_[i][j] = Utils.randomFloat(new Random(1l), -a, a);
+				data_[i][j] = Utils.randomFloat(random, -a, a);
 			}
 		}
 	}

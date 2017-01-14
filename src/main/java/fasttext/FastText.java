@@ -15,6 +15,8 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -39,7 +41,7 @@ public class FastText {
 	private long start;
 
 	public void getVector(Vector vec, final String word) {
-		final java.util.Vector<Integer> ngrams = dict_.getNgrams(word);
+		final List<Integer> ngrams = dict_.getNgrams(word);
 		vec.zero();
 		for (Integer it : ngrams) {
 			vec.addRow(input_, it);
@@ -102,8 +104,8 @@ public class FastText {
 	}
 
 	/**
-	 * Load binary model file. 
-	 * Set Dictionary LineProcessor afterward if needed.
+	 * Load binary model file. Set Dictionary LineProcessor afterward if needed.
+	 * 
 	 * @param filename
 	 * @throws IOException
 	 */
@@ -151,22 +153,21 @@ public class FastText {
 				(int) wst, lr, loss, etah, etam);
 	}
 
-	public void supervised(Model model, float lr, final java.util.Vector<Integer> line,
-			final java.util.Vector<Integer> labels) {
+	public void supervised(Model model, float lr, final List<Integer> line, final List<Integer> labels) {
 		if (labels.size() == 0 || line.size() == 0)
 			return;
 		int i = Utils.randomInt(model.rng, 1, labels.size()) - 1;
 		model.update(line, labels.get(i), lr);
 	}
 
-	public void cbow(Model model, float lr, final java.util.Vector<Integer> line) {
-		java.util.Vector<Integer> bow = new java.util.Vector<Integer>();
+	public void cbow(Model model, float lr, final List<Integer> line) {
+		List<Integer> bow = new ArrayList<Integer>();
 		for (int w = 0; w < line.size(); w++) {
 			int boundary = Utils.randomInt(model.rng, 1, args_.ws);
 			bow.clear();
 			for (int c = -boundary; c <= boundary; c++) {
 				if (c != 0 && w + c >= 0 && w + c < line.size()) {
-					final java.util.Vector<Integer> ngrams = dict_.getNgrams(line.get(w + c));
+					final List<Integer> ngrams = dict_.getNgrams(line.get(w + c));
 					bow.addAll(ngrams);
 				}
 			}
@@ -174,10 +175,10 @@ public class FastText {
 		}
 	}
 
-	public void skipgram(Model model, float lr, final java.util.Vector<Integer> line) {
+	public void skipgram(Model model, float lr, final List<Integer> line) {
 		for (int w = 0; w < line.size(); w++) {
 			int boundary = Utils.randomInt(model.rng, 1, args_.ws);
-			final java.util.Vector<Integer> ngrams = dict_.getNgrams(line.get(w));
+			final List<Integer> ngrams = dict_.getNgrams(line.get(w));
 			for (int c = -boundary; c <= boundary; c++) {
 				if (c != 0 && w + c >= 0 && w + c < line.size()) {
 					model.update(ngrams, line.get(w + c), lr);
@@ -189,8 +190,8 @@ public class FastText {
 	public void test(InputStream in, int k) throws IOException {
 		int nexamples = 0, nlabels = 0;
 		double precision = 0.0f;
-		java.util.Vector<Integer> line = new java.util.Vector<Integer>();
-		java.util.Vector<Integer> labels = new java.util.Vector<Integer>();
+		List<Integer> line = new ArrayList<Integer>();
+		List<Integer> labels = new ArrayList<Integer>();
 
 		BufferedReader dis = new BufferedReader(new InputStreamReader(in, "UTF-8"));
 		try {
@@ -205,7 +206,7 @@ public class FastText {
 				dict_.getLine(lineString, line, labels, model_.rng);
 				dict_.addNgrams(line, args_.wordNgrams);
 				if (labels.size() > 0 && line.size() > 0) {
-					java.util.Vector<Pair<Float, Integer>> modelPredictions = new java.util.Vector<Pair<Float, Integer>>();
+					List<Pair<Float, Integer>> modelPredictions = new ArrayList<Pair<Float, Integer>>();
 					model_.predict(line, k, modelPredictions);
 					for (Pair<Float, Integer> pair : modelPredictions) {
 						if (labels.contains(pair.getValue())) {
@@ -228,10 +229,9 @@ public class FastText {
 		System.out.println("Number of examples: " + nexamples);
 	}
 
-	public void predict(String line, int k, java.util.Vector<Pair<Float, String>> predictions, Random urd)
-			throws IOException {
-		java.util.Vector<Integer> words = new java.util.Vector<Integer>();
-		java.util.Vector<Integer> labels = new java.util.Vector<Integer>();
+	public void predict(String line, int k, List<Pair<Float, String>> predictions, Random urd) throws IOException {
+		List<Integer> words = new ArrayList<Integer>();
+		List<Integer> labels = new ArrayList<Integer>();
 		dict_.getLine(line, words, labels, urd);
 		dict_.addNgrams(words, args_.wordNgrams);
 
@@ -240,7 +240,7 @@ public class FastText {
 		}
 		Vector hidden = new Vector(args_.dim);
 		Vector output = new Vector(dict_.nlabels());
-		java.util.Vector<Pair<Float, Integer>> modelPredictions = new java.util.Vector<Pair<Float, Integer>>(k + 1);
+		List<Pair<Float, Integer>> modelPredictions = new ArrayList<Pair<Float, Integer>>(k + 1);
 		model_.predict(words, k, modelPredictions, hidden, output);
 		predictions.clear();
 		for (Pair<Float, Integer> pair : modelPredictions) {
@@ -249,7 +249,7 @@ public class FastText {
 	}
 
 	public void predict(InputStream in, int k, boolean print_prob) throws IOException {
-		java.util.Vector<Pair<Float, String>> predictions = new java.util.Vector<Pair<Float, String>>(k);
+		List<Pair<Float, String>> predictions = new ArrayList<Pair<Float, String>>(k);
 
 		BufferedReader dis = new BufferedReader(new InputStreamReader(in, "UTF-8"));
 		try {
@@ -294,8 +294,8 @@ public class FastText {
 	}
 
 	public void textVectors() {
-		java.util.Vector<Integer> line = new java.util.Vector<Integer>();
-		java.util.Vector<Integer> labels = new java.util.Vector<Integer>();
+		List<Integer> line = new ArrayList<Integer>();
+		List<Integer> labels = new ArrayList<Integer>();
 		Vector vec = new Vector(args_.dim);
 		@SuppressWarnings("resource")
 		java.util.Scanner scanner = new java.util.Scanner(System.in);
@@ -350,8 +350,8 @@ public class FastText {
 				final long ntokens = dict_.ntokens();
 				long localTokenCount = 0;
 
-				java.util.Vector<Integer> line = new java.util.Vector<Integer>();
-				java.util.Vector<Integer> labels = new java.util.Vector<Integer>();
+				List<Integer> line = new ArrayList<Integer>();
+				List<Integer> labels = new ArrayList<Integer>();
 
 				String lineString;
 				while (tokenCount.get() < args_.epoch * ntokens) {
@@ -422,7 +422,7 @@ public class FastText {
 	}
 
 	public void loadVectors(String filename) throws IOException {
-		java.util.Vector<String> words = new java.util.Vector<String>();
+		List<String> words;
 		Matrix mat; // temp. matrix for pretrained vectors
 		int n, dim;
 
@@ -436,6 +436,8 @@ public class FastText {
 			lineParts = line.split(" ");
 			n = Integer.parseInt(lineParts[0]);
 			dim = Integer.parseInt(lineParts[1]);
+
+			words = new ArrayList<String>(n);
 
 			if (dim != args_.dim) {
 				System.err.println("Dimension of pretrained vectors does not match -dim option");

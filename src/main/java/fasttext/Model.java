@@ -1,7 +1,9 @@
 package fasttext;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Random;
 
 import fasttext.Args.loss_name;
@@ -38,12 +40,12 @@ public class Model {
 	private float[] t_sigmoid;
 	private float[] t_log;
 	// used for negative sampling:
-	private java.util.Vector<Integer> negatives;
+	private List<Integer> negatives;
 	private int negpos;
 	// used for hierarchical softmax:
-	private java.util.Vector<java.util.Vector<Integer>> paths;
-	private java.util.Vector<java.util.Vector<Boolean>> codes;
-	private java.util.Vector<Node> tree;
+	private List<List<Integer>> paths;
+	private List<List<Boolean>> codes;
+	private List<Node> tree;
 
 	public transient Random rng;
 
@@ -94,8 +96,8 @@ public class Model {
 	public float hierarchicalSoftmax(int target, float lr) {
 		float loss = 0.0f;
 		grad_.zero();
-		final java.util.Vector<Boolean> binaryCode = codes.get(target);
-		final java.util.Vector<Integer> pathToRoot = paths.get(target);
+		final List<Boolean> binaryCode = codes.get(target);
+		final List<Integer> pathToRoot = paths.get(target);
 		for (int i = 0; i < pathToRoot.size(); i++) {
 			loss += binaryLogistic(pathToRoot.get(i), binaryCode.get(i), lr);
 		}
@@ -133,7 +135,7 @@ public class Model {
 		return -log(output_.get(target));
 	}
 
-	public void computeHidden(final java.util.Vector<Integer> input, Vector hidden) {
+	public void computeHidden(final List<Integer> input, Vector hidden) {
 		Utils.checkArgument(hidden.size() == hsz_);
 		hidden.zero();
 		for (Integer it : input) {
@@ -150,10 +152,12 @@ public class Model {
 		}
 	};
 
-	public void predict(final java.util.Vector<Integer> input, int k, java.util.Vector<Pair<Float, Integer>> heap,
-			Vector hidden, Vector output) {
+	public void predict(final List<Integer> input, int k, List<Pair<Float, Integer>> heap, Vector hidden,
+			Vector output) {
 		Utils.checkArgument(k > 0);
-		heap.ensureCapacity(k + 1);
+		if (heap instanceof ArrayList) {
+			((ArrayList<Pair<Float, Integer>>) heap).ensureCapacity(k + 1);
+		}
 		computeHidden(input, hidden);
 		if (args_.loss == loss_name.hs) {
 			dfs(k, 2 * osz_ - 2, 0.0f, heap, hidden);
@@ -163,11 +167,11 @@ public class Model {
 		Collections.sort(heap, comparePairs);
 	}
 
-	public void predict(final java.util.Vector<Integer> input, int k, java.util.Vector<Pair<Float, Integer>> heap) {
+	public void predict(final List<Integer> input, int k, List<Pair<Float, Integer>> heap) {
 		predict(input, k, heap, hidden_, output_);
 	}
 
-	public void findKBest(int k, java.util.Vector<Pair<Float, Integer>> heap, Vector hidden, Vector output) {
+	public void findKBest(int k, List<Pair<Float, Integer>> heap, Vector hidden, Vector output) {
 		computeOutputSoftmax(hidden, output);
 		for (int i = 0; i < osz_; i++) {
 			if (heap.size() == k && log(output.get(i)) < heap.get(0).getKey()) {
@@ -181,7 +185,7 @@ public class Model {
 		}
 	}
 
-	public void dfs(int k, int node, float score, java.util.Vector<Pair<Float, Integer>> heap, Vector hidden) {
+	public void dfs(int k, int node, float score, List<Pair<Float, Integer>> heap, Vector hidden) {
 		if (heap.size() == k && score < heap.get(0).getKey()) {
 			return;
 		}
@@ -200,7 +204,7 @@ public class Model {
 		dfs(k, tree.get(node).right, score + log(f), heap, hidden);
 	}
 
-	public void update(final java.util.Vector<Integer> input, int target, float lr) {
+	public void update(final List<Integer> input, int target, float lr) {
 		Utils.checkArgument(target >= 0);
 		Utils.checkArgument(target < osz_);
 		if (input.size() == 0) {
@@ -225,7 +229,7 @@ public class Model {
 		}
 	}
 
-	public void setTargetCounts(final java.util.Vector<Long> counts) {
+	public void setTargetCounts(final List<Long> counts) {
 		Utils.checkArgument(counts.size() == osz_);
 		if (args_.loss == loss_name.ns) {
 			initTableNegatives(counts);
@@ -235,8 +239,8 @@ public class Model {
 		}
 	}
 
-	public void initTableNegatives(final java.util.Vector<Long> counts) {
-		negatives = new java.util.Vector<Integer>(counts.size());
+	public void initTableNegatives(final List<Long> counts) {
+		negatives = new ArrayList<Integer>(counts.size());
 		float z = 0.0f;
 		for (int i = 0; i < counts.size(); i++) {
 			z += (float) Math.pow(counts.get(i), 0.5f);
@@ -259,10 +263,10 @@ public class Model {
 		return negative;
 	}
 
-	public void buildTree(final java.util.Vector<Long> counts) {
-		paths = new java.util.Vector<java.util.Vector<Integer>>(osz_);
-		codes = new java.util.Vector<java.util.Vector<Boolean>>(osz_);
-		tree = new java.util.Vector<Node>(2 * osz_ - 1);
+	public void buildTree(final List<Long> counts) {
+		paths = new ArrayList<List<Integer>>(osz_);
+		codes = new ArrayList<List<Boolean>>(osz_);
+		tree = new ArrayList<Node>(2 * osz_ - 1);
 
 		// tree.setSize();
 		for (int i = 0; i < 2 * osz_ - 1; i++) {
@@ -295,8 +299,8 @@ public class Model {
 			tree.get(mini[1]).binary = true;
 		}
 		for (int i = 0; i < osz_; i++) {
-			java.util.Vector<Integer> path = new java.util.Vector<Integer>();
-			java.util.Vector<Boolean> code = new java.util.Vector<Boolean>();
+			List<Integer> path = new ArrayList<Integer>();
+			List<Boolean> code = new ArrayList<Boolean>();
 			int j = i;
 			while (tree.get(j).parent != -1) {
 				path.add(tree.get(j).parent - osz_);

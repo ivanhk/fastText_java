@@ -6,13 +6,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Vector;
 
 import fasttext.Args.model_name;
 
@@ -57,7 +58,7 @@ public class Dictionary {
 		String word;
 		long count;
 		entry_type type;
-		Vector<Integer> subwords;
+		List<Integer> subwords;
 
 		@Override
 		public String toString() {
@@ -76,8 +77,8 @@ public class Dictionary {
 
 	}
 
-	private Vector<entry> words_;
-	private Vector<Float> pdiscard_;
+	private List<entry> words_;
+	private List<Float> pdiscard_;
 	private Map<Long, Integer> word2int_;
 	private int size_;
 	private int nwords_;
@@ -95,7 +96,7 @@ public class Dictionary {
 		nlabels_ = 0;
 		ntokens_ = 0;
 		word2int_ = new HashMap<Long, Integer>(MAX_VOCAB_SIZE);
-		words_ = new Vector<entry>(MAX_VOCAB_SIZE);
+		words_ = new ArrayList<entry>(MAX_VOCAB_SIZE);
 	}
 
 	public long find(final String w) {
@@ -135,14 +136,14 @@ public class Dictionary {
 		return ntokens_;
 	}
 
-	public final Vector<Integer> getNgrams(int i) {
+	public final List<Integer> getNgrams(int i) {
 		Utils.checkArgument(i >= 0);
 		Utils.checkArgument(i < nwords_);
 		return words_.get(i).subwords;
 	}
 
-	public final Vector<Integer> getNgrams(final String word) {
-		Vector<Integer> ngrams = new Vector<Integer>();
+	public final List<Integer> getNgrams(final String word) {
+		List<Integer> ngrams = new ArrayList<Integer>();
 		int i = getId(word);
 		if (i >= 0) {
 			ngrams = words_.get(i).subwords;
@@ -192,7 +193,7 @@ public class Dictionary {
 		return h & 0xffffffffL;
 	}
 
-	public void computeNgrams(final String word, Vector<Integer> ngrams) {
+	public void computeNgrams(final String word, List<Integer> ngrams) {
 		for (int i = 0; i < word.length(); i++) {
 			StringBuilder ngram = new StringBuilder();
 			if (charMatches(word.charAt(i))) {
@@ -234,7 +235,7 @@ public class Dictionary {
 			String word = BOW + words_.get(i).word + EOW;
 			entry e = words_.get(i);
 			if (e.subwords == null) {
-				e.subwords = new Vector<Integer>();
+				e.subwords = new ArrayList<Integer>();
 			}
 			e.subwords.add(i);
 			computeNgrams(word, e.subwords);
@@ -300,11 +301,12 @@ public class Dictionary {
 				iterator.remove();
 			}
 		}
-		words_.trimToSize();
+		((ArrayList<entry>) words_).trimToSize();
 		size_ = 0;
 		nwords_ = 0;
 		nlabels_ = 0;
-		word2int_.clear();
+		// word2int_.clear();
+		word2int_ = new HashMap<Long, Integer>(words_.size());
 		for (entry _entry : words_) {
 			long h = find(_entry.word);
 			word2int_.put(h, size_++);
@@ -315,7 +317,6 @@ public class Dictionary {
 				nlabels_++;
 			}
 		}
-		// word2int_.trim();
 	}
 
 	private transient Comparator<entry> entry_comparator = new Comparator<entry>() {
@@ -330,15 +331,15 @@ public class Dictionary {
 	};
 
 	public void initTableDiscard() {
-		pdiscard_ = new Vector<Float>(size_);
+		pdiscard_ = new ArrayList<Float>(size_);
 		for (int i = 0; i < size_; i++) {
 			float f = (float) (words_.get(i).count) / (float) ntokens_;
 			pdiscard_.add((float) (Math.sqrt(args_.t / f) + args_.t / f));
 		}
 	}
 
-	public Vector<Long> getCounts(entry_type type) {
-		Vector<Long> counts = new Vector<Long>(words_.size());
+	public List<Long> getCounts(entry_type type) {
+		List<Long> counts = new ArrayList<Long>(words_.size());
 		for (entry w : words_) {
 			if (w.type == type)
 				counts.add(w.count);
@@ -346,7 +347,7 @@ public class Dictionary {
 		return counts;
 	}
 
-	public void addNgrams(Vector<Integer> line, int n) {
+	public void addNgrams(List<Integer> line, int n) {
 		int line_size = line.size();
 		for (int i = 0; i < line_size; i++) {
 			long h = (long) line.get(i);
@@ -357,7 +358,7 @@ public class Dictionary {
 		}
 	}
 
-	public int getLine(String line, Vector<Integer> words, Vector<Integer> labels, Random urd) {
+	public int getLine(String line, List<Integer> words, List<Integer> labels, Random urd) {
 		if (!Utils.isEmpty(line)) {
 			String[] tokens = lineProcessor.getTokens(line);
 			return getLine(tokens, words, labels, urd);
@@ -365,7 +366,7 @@ public class Dictionary {
 		return 0;
 	}
 
-	public int getLine(String[] tokens, Vector<Integer> words, Vector<Integer> labels, Random urd) {
+	public int getLine(String[] tokens, List<Integer> words, List<Integer> labels, Random urd) {
 		int ntokens = 0;
 		words.clear();
 		labels.clear();
@@ -419,12 +420,15 @@ public class Dictionary {
 	}
 
 	public void load(InputStream ifs) throws IOException {
-		words_.clear();
-		word2int_.clear();
+		// words_.clear();
+		// word2int_.clear();
 		size_ = IOUtil.readInt(ifs);
 		nwords_ = IOUtil.readInt(ifs);
 		nlabels_ = IOUtil.readInt(ifs);
 		ntokens_ = IOUtil.readLong(ifs);
+
+		word2int_ = new HashMap<Long, Integer>(size_);
+		words_ = new ArrayList<entry>(size_);
 
 		for (int i = 0; i < size_; i++) {
 			entry e = new entry();
@@ -477,11 +481,11 @@ public class Dictionary {
 		this.lineProcessor = lineProcessor;
 	}
 
-	public Vector<entry> getWords_() {
+	public List<entry> getWords_() {
 		return words_;
 	}
 
-	public Vector<Float> getPdiscard_() {
+	public List<Float> getPdiscard_() {
 		return pdiscard_;
 	}
 
