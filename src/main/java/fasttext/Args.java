@@ -76,10 +76,8 @@ public class Args {
 
 	public void printHelp() {
 		System.out.println("\n" + "The following arguments are mandatory:\n"
-				+ "  -input              training file path\n" 
-				+ "  -output             output file path\n\n"
-				+ "The following arguments are optional:\n" 
-				+ "  -lr                 learning rate [" + lr + "]\n"
+				+ "  -input              training file path\n" + "  -output             output file path\n\n"
+				+ "The following arguments are optional:\n" + "  -lr                 learning rate [" + lr + "]\n"
 				+ "  -lrUpdateRate       change the rate of updates for the learning rate [" + lrUpdateRate + "]\n"
 				+ "  -dim                size of word vectors [" + dim + "]\n"
 				+ "  -ws                 size of the context window [" + ws + "]\n"
@@ -93,42 +91,43 @@ public class Args {
 				+ "  -minn               min length of char ngram [" + minn + "]\n"
 				+ "  -maxn               max length of char ngram [" + maxn + "]\n"
 				+ "  -thread             number of threads [" + thread + "]\n"
-				+ "  -t                  sampling threshold [" + t + "]\n" 
-				+ "  -label              labels prefix [" + label + "]\n" 
-				+ "  -verbose            verbosity level [" + verbose + "]\n"
+				+ "  -t                  sampling threshold [" + t + "]\n" + "  -label              labels prefix ["
+				+ label + "]\n" + "  -verbose            verbosity level [" + verbose + "]\n"
 				+ "  -pretrainedVectors  pretrained word vectors for supervised learning []");
 	}
 
 	public void save(OutputStream ofs) throws IOException {
-		ofs.write(IOUtil.intToByteArray(dim));
-		ofs.write(IOUtil.intToByteArray(ws));
-		ofs.write(IOUtil.intToByteArray(epoch));
-		ofs.write(IOUtil.intToByteArray(minCount));
-		ofs.write(IOUtil.intToByteArray(neg));
-		ofs.write(IOUtil.intToByteArray(wordNgrams));
-		ofs.write(IOUtil.intToByteArray(loss.value));
-		ofs.write(IOUtil.intToByteArray(model.value));
-		ofs.write(IOUtil.intToByteArray(bucket));
-		ofs.write(IOUtil.intToByteArray(minn));
-		ofs.write(IOUtil.intToByteArray(maxn));
-		ofs.write(IOUtil.intToByteArray(lrUpdateRate));
-		ofs.write(IOUtil.doubleToByteArray(t));
+		IOUtil ioutil = new IOUtil();
+		ofs.write(ioutil.intToByteArray(dim));
+		ofs.write(ioutil.intToByteArray(ws));
+		ofs.write(ioutil.intToByteArray(epoch));
+		ofs.write(ioutil.intToByteArray(minCount));
+		ofs.write(ioutil.intToByteArray(neg));
+		ofs.write(ioutil.intToByteArray(wordNgrams));
+		ofs.write(ioutil.intToByteArray(loss.value));
+		ofs.write(ioutil.intToByteArray(model.value));
+		ofs.write(ioutil.intToByteArray(bucket));
+		ofs.write(ioutil.intToByteArray(minn));
+		ofs.write(ioutil.intToByteArray(maxn));
+		ofs.write(ioutil.intToByteArray(lrUpdateRate));
+		ofs.write(ioutil.doubleToByteArray(t));
 	}
 
 	public void load(InputStream input) throws IOException {
-		dim = IOUtil.readInt(input);
-		ws = IOUtil.readInt(input);
-		epoch = IOUtil.readInt(input);
-		minCount = IOUtil.readInt(input);
-		neg = IOUtil.readInt(input);
-		wordNgrams = IOUtil.readInt(input);
-		loss = loss_name.fromValue(IOUtil.readInt(input));
-		model = model_name.fromValue(IOUtil.readInt(input));
-		bucket = IOUtil.readInt(input);
-		minn = IOUtil.readInt(input);
-		maxn = IOUtil.readInt(input);
-		lrUpdateRate = IOUtil.readInt(input);
-		t = IOUtil.readDouble(input);
+		IOUtil ioutil = new IOUtil();
+		dim = ioutil.readInt(input);
+		ws = ioutil.readInt(input);
+		epoch = ioutil.readInt(input);
+		minCount = ioutil.readInt(input);
+		neg = ioutil.readInt(input);
+		wordNgrams = ioutil.readInt(input);
+		loss = loss_name.fromValue(ioutil.readInt(input));
+		model = model_name.fromValue(ioutil.readInt(input));
+		bucket = ioutil.readInt(input);
+		minn = ioutil.readInt(input);
+		maxn = ioutil.readInt(input);
+		lrUpdateRate = ioutil.readInt(input);
+		t = ioutil.readDouble(input);
 	}
 
 	public void parseArgs(String[] args) {

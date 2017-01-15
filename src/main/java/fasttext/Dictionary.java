@@ -216,15 +216,7 @@ public class Dictionary {
 	}
 
 	private boolean charMatches(char ch) {
-		if (ch == ' ') {
-			return true;
-		} else if (ch == '\t') {
-			return true;
-		} else if (ch == '\n') {
-			return true;
-		} else if (ch == '\f') { // \x0B
-			return true;
-		} else if (ch == '\r') {
+		if (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\f' || ch == '\r') {
 			return true;
 		}
 		return false;
@@ -405,36 +397,38 @@ public class Dictionary {
 	}
 
 	public void save(OutputStream ofs) throws IOException {
-		ofs.write(IOUtil.intToByteArray(size_));
-		ofs.write(IOUtil.intToByteArray(nwords_));
-		ofs.write(IOUtil.intToByteArray(nlabels_));
-		ofs.write(IOUtil.longToByteArray(ntokens_));
+		IOUtil ioutil = new IOUtil();
+		ofs.write(ioutil.intToByteArray(size_));
+		ofs.write(ioutil.intToByteArray(nwords_));
+		ofs.write(ioutil.intToByteArray(nlabels_));
+		ofs.write(ioutil.longToByteArray(ntokens_));
 		// Charset charset = Charset.forName("UTF-8");
 		for (int i = 0; i < size_; i++) {
 			entry e = words_.get(i);
 			ofs.write(e.word.getBytes());
 			ofs.write(0);
-			ofs.write(IOUtil.longToByteArray(e.count));
-			ofs.write(IOUtil.intToByte(e.type.value));
+			ofs.write(ioutil.longToByteArray(e.count));
+			ofs.write(ioutil.intToByte(e.type.value));
 		}
 	}
 
 	public void load(InputStream ifs) throws IOException {
 		// words_.clear();
 		// word2int_.clear();
-		size_ = IOUtil.readInt(ifs);
-		nwords_ = IOUtil.readInt(ifs);
-		nlabels_ = IOUtil.readInt(ifs);
-		ntokens_ = IOUtil.readLong(ifs);
+		IOUtil ioutil = new IOUtil();
+		size_ = ioutil.readInt(ifs);
+		nwords_ = ioutil.readInt(ifs);
+		nlabels_ = ioutil.readInt(ifs);
+		ntokens_ = ioutil.readLong(ifs);
 
 		word2int_ = new HashMap<Long, Integer>(size_);
 		words_ = new ArrayList<entry>(size_);
 
 		for (int i = 0; i < size_; i++) {
 			entry e = new entry();
-			e.word = IOUtil.readString(ifs);
-			e.count = IOUtil.readLong(ifs);
-			e.type = entry_type.fromValue(IOUtil.readByte(ifs));
+			e.word = ioutil.readString(ifs);
+			e.count = ioutil.readLong(ifs);
+			e.type = entry_type.fromValue(ioutil.readByte(ifs));
 			words_.add(e);
 			word2int_.put(find(e.word), i);
 		}

@@ -69,20 +69,25 @@ public class Matrix {
 	}
 
 	public void load(InputStream input) throws IOException {
-		m_ = (int) IOUtil.readLong(input);
-		n_ = (int) IOUtil.readLong(input);
+		IOUtil ioutil = new IOUtil();
 
+		m_ = (int) ioutil.readLong(input);
+		n_ = (int) ioutil.readLong(input);
+
+		ioutil.setFloatArrayBufferSize(n_);
 		data_ = new float[m_][n_];
 		for (int i = 0; i < m_; i++) {
-			data_[i] = IOUtil.readFloat(input, n_);
+			ioutil.readFloat(input, data_[i]);
 		}
 	}
 
 	public void save(OutputStream ofs) throws IOException {
-		ofs.write(IOUtil.longToByteArray(m_));
-		ofs.write(IOUtil.longToByteArray(n_));
+		IOUtil ioutil = new IOUtil();
+		ioutil.setFloatArrayBufferSize(n_);
+		ofs.write(ioutil.longToByteArray(m_));
+		ofs.write(ioutil.longToByteArray(n_));
 		for (int i = 0; i < m_; i++) {
-			ofs.write(IOUtil.floatToByteArray(data_[i]));
+			ofs.write(ioutil.floatToByteArray(data_[i]));
 		}
 	}
 
