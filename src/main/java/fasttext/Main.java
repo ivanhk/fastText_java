@@ -13,19 +13,22 @@ public class Main {
 				+ "  test                evaluate a supervised classifier\n"
 				+ "  predict             predict most likely labels\n"
 				+ "  predict-prob        predict most likely labels with probabilities\n"
-				+ "  skipgram            train a skipgram model\n" + "  cbow                train a cbow model\n"
+				+ "  skipgram            train a skipgram model\n" 
+				+ "  cbow                train a cbow model\n"
 				+ "  print-vectors       print vectors given a trained model\n");
 	}
 
 	public static void printTestUsage() {
 		System.out.print("usage: java -jar fasttext.jar test <model> <test-data> [<k>]\n\n"
-				+ "  <model>      model filename\n" + "  <test-data>  test data filename (if -, read from stdin)\n"
+				+ "  <model>      model filename\n" 
+				+ "  <test-data>  test data filename (if -, read from stdin)\n"
 				+ "  <k>          (optional; 1 by default) predict top k labels\n");
 	}
 
 	public static void printPredictUsage() {
 		System.out.print("usage: java -jar fasttext.jar predict[-prob] <model> <test-data> [<k>]\n\n"
-				+ "  <model>      model filename\n" + "  <test-data>  test data filename (if -, read from stdin)\n"
+				+ "  <model>      model filename\n" 
+				+ "  <test-data>  test data filename (if -, read from stdin)\n"
 				+ "  <k>          (optional; 1 by default) predict top k labels\n");
 	}
 
