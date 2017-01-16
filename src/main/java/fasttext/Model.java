@@ -268,14 +268,14 @@ public class Model {
 		codes = new ArrayList<List<Boolean>>(osz_);
 		tree = new ArrayList<Node>(2 * osz_ - 1);
 
-		// tree.setSize();
 		for (int i = 0; i < 2 * osz_ - 1; i++) {
-			Node node = tree.get(i);
+			Node node = new Node();
 			node.parent = -1;
 			node.left = -1;
 			node.right = -1;
 			node.count = 1000000000000000L;// 1e15f;
 			node.binary = false;
+			tree.add(i, node);
 		}
 		for (int i = 0; i < osz_; i++) {
 			tree.get(i).count = counts.get(i);
