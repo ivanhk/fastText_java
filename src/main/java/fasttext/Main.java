@@ -13,28 +13,24 @@ public class Main {
 				+ "  test                evaluate a supervised classifier\n"
 				+ "  predict             predict most likely labels\n"
 				+ "  predict-prob        predict most likely labels with probabilities\n"
-				+ "  skipgram            train a skipgram model\n" 
-				+ "  cbow                train a cbow model\n"
+				+ "  skipgram            train a skipgram model\n" + "  cbow                train a cbow model\n"
 				+ "  print-vectors       print vectors given a trained model\n");
 	}
 
 	public static void printTestUsage() {
 		System.out.print("usage: java -jar fasttext.jar test <model> <test-data> [<k>]\n\n"
-				+ "  <model>      model filename\n" 
-				+ "  <test-data>  test data filename (if -, read from stdin)\n"
+				+ "  <model>      model filename\n" + "  <test-data>  test data filename (if -, read from stdin)\n"
 				+ "  <k>          (optional; 1 by default) predict top k labels\n");
 	}
 
 	public static void printPredictUsage() {
 		System.out.print("usage: java -jar fasttext.jar predict[-prob] <model> <test-data> [<k>]\n\n"
-				+ "  <model>      model filename\n" 
-				+ "  <test-data>  test data filename (if -, read from stdin)\n"
+				+ "  <model>      model filename\n" + "  <test-data>  test data filename (if -, read from stdin)\n"
 				+ "  <k>          (optional; 1 by default) predict top k labels\n");
 	}
 
 	public static void printPrintVectorsUsage() {
-		System.out.print("usage: java -jar fasttext.jar print-vectors <model>\n\n" 
-				+ " <model> model filename\n");
+		System.out.print("usage: java -jar fasttext.jar print-vectors <model>\n\n" + " <model> model filename\n");
 	}
 
 	public void test(String[] args) throws IOException {
@@ -118,10 +114,6 @@ public class Main {
 					|| "supervised".equalsIgnoreCase(command)) {
 				op.train(args);
 			} else if ("test".equalsIgnoreCase(command)) {
-				if (args.length != 3) {
-					printTestUsage();
-					System.exit(1);
-				}
 				op.test(args);
 			} else if ("print-vectors".equalsIgnoreCase(command)) {
 				op.printVectors(args);
