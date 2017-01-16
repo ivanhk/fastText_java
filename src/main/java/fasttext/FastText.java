@@ -145,7 +145,7 @@ public class FastText {
 	public void printInfo(float progress, float loss) {
 		float t = (float) (System.currentTimeMillis() - start) / 1000;
 		float wst = (float) (tokenCount.get()) / t;
-		float lr = (float) (args_.lr * (1.0 - progress));
+		float lr = (float) (args_.lr * (1.0f - progress));
 		int eta = (int) (t / progress * (1 - progress) / args_.thread);
 		int etah = eta / 3600;
 		int etam = (eta - etah * 3600) / 60;

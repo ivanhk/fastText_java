@@ -76,7 +76,7 @@ public class Model {
 		if (label) {
 			return -log(score);
 		} else {
-			return -log((float) (1.0 - score));
+			return -log(1.0f - score);
 		}
 	}
 

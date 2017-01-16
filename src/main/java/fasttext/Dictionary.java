@@ -205,11 +205,11 @@ public class Dictionary {
 					ngram.append(word.charAt(j++));
 				}
 				if (n >= args_.minn && !(n == 1 && (i == 0 || j == word.length()))) {
-					int h = (int) (hash(ngram.toString()) % args_.bucket);
+					int h = (int) (nwords_ + (hash(ngram.toString()) % args_.bucket));
 					if (h < 0) {
 						System.err.println("computeNgrams h<0: " + h + " on word: " + word);
 					}
-					ngrams.add(nwords_ + h);
+					ngrams.add(h);
 				}
 			}
 		}
@@ -331,7 +331,7 @@ public class Dictionary {
 	}
 
 	public List<Long> getCounts(entry_type type) {
-		List<Long> counts = new ArrayList<Long>(words_.size());
+		List<Long> counts = entry_type.label == type ? new ArrayList<Long>(nlabels()) : new ArrayList<Long>(nwords());
 		for (entry w : words_) {
 			if (w.type == type)
 				counts.add(w.count);
@@ -344,7 +344,7 @@ public class Dictionary {
 		for (int i = 0; i < line_size; i++) {
 			long h = (long) line.get(i);
 			for (int j = i + 1; j < line_size && j < i + n; j++) {
-				h = h * 116049371 + line.get(j);
+				h = (h * 116049371l + line.get(j)) & 0xffffffffl;
 				line.add(nwords_ + (int) (h % args_.bucket));
 			}
 		}
