@@ -1,10 +1,7 @@
 package fasttext;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -16,6 +13,8 @@ import java.util.Map;
 import java.util.Random;
 
 import fasttext.Args.model_name;
+import fasttext.io.BufferedLineReader;
+import fasttext.io.LineReader;
 
 public class Dictionary {
 
@@ -87,7 +86,8 @@ public class Dictionary {
 
 	private Args args_;
 
-	private LineProcessor lineProcessor = new LineProcessor();
+	private String charsetName = "UTF-8";
+	private Class<? extends LineReader> lineReaderClass = BufferedLineReader.class;
 
 	public Dictionary(Args args) {
 		args_ = args;
@@ -234,25 +234,22 @@ public class Dictionary {
 		}
 	}
 
-	public void readFromFile(String file) throws IOException {
-		FileInputStream fis = new FileInputStream(file);
-		BufferedReader br = new BufferedReader(new InputStreamReader(fis, "UTF-8"));
+	public void readFromFile(String file) throws IOException, Exception {
+		LineReader lineReader = null;
+
 		try {
+			lineReader = lineReaderClass.getConstructor(String.class, String.class).newInstance(file, charsetName);
 			long minThreshold = 1;
-			String line;
-			while ((line = br.readLine()) != null) {
-				if (Utils.isEmpty(line) || line.startsWith("#")) {
-					continue;
-				}
-				String[] tokens = lineProcessor.getTokens(line);
-				for (int i = 0; i <= tokens.length; i++) {
-					if (i == tokens.length) {
+			String[] lineTokens;
+			while ((lineTokens = lineReader.readLineTokens()) != null) {
+				for (int i = 0; i <= lineTokens.length; i++) {
+					if (i == lineTokens.length) {
 						add(EOS);
 					} else {
-						if (Utils.isEmpty(tokens[i])) {
+						if (Utils.isEmpty(lineTokens[i])) {
 							continue;
 						}
-						add(tokens[i]);
+						add(lineTokens[i]);
 					}
 					if (ntokens_ % 1000000 == 0 && args_.verbose > 1) {
 						System.out.printf("\rRead %dM words", ntokens_ / 1000000);
@@ -264,8 +261,9 @@ public class Dictionary {
 				}
 			}
 		} finally {
-			fis.close();
-			br.close();
+			if (lineReader != null) {
+				lineReader.close();
+			}
 		}
 		threshold(args_.minCount, args_.minCountLabel);
 		initTableDiscard();
@@ -348,14 +346,6 @@ public class Dictionary {
 				line.add(nwords_ + (int) (h % args_.bucket));
 			}
 		}
-	}
-
-	public int getLine(String line, List<Integer> words, List<Integer> labels, Random urd) {
-		if (!Utils.isEmpty(line)) {
-			String[] tokens = lineProcessor.getTokens(line);
-			return getLine(tokens, words, labels, urd);
-		}
-		return 0;
 	}
 
 	public int getLine(String[] tokens, List<Integer> words, List<Integer> labels, Random urd) {
@@ -459,22 +449,6 @@ public class Dictionary {
 		return builder.toString();
 	}
 
-	public static class LineProcessor {
-		public String LINE_SPLITTER = " |\r|\t|\\v|\f|\0";
-
-		public String[] getTokens(String line) {
-			return line.split(LINE_SPLITTER, -1);
-		}
-	}
-
-	public LineProcessor getLineProcessor() {
-		return lineProcessor;
-	}
-
-	public void setLineProcessor(LineProcessor lineProcessor) {
-		this.lineProcessor = lineProcessor;
-	}
-
 	public List<entry> getWords_() {
 		return words_;
 	}
@@ -493,6 +467,22 @@ public class Dictionary {
 
 	public Args getArgs_() {
 		return args_;
+	}
+
+	public String getCharsetName() {
+		return charsetName;
+	}
+
+	public Class<? extends LineReader> getLineReaderClass() {
+		return lineReaderClass;
+	}
+
+	public void setCharsetName(String charsetName) {
+		this.charsetName = charsetName;
+	}
+
+	public void setLineReaderClass(Class<? extends LineReader> lineReaderClass) {
+		this.lineReaderClass = lineReaderClass;
 	}
 
 }

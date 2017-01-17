@@ -7,7 +7,6 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -22,6 +21,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import fasttext.Args.model_name;
 import fasttext.Dictionary.entry_type;
+import fasttext.io.*;
 
 /**
  * FastText class, can be used as a lib in other projects
@@ -39,6 +39,9 @@ public class FastText {
 
 	private AtomicLong tokenCount;
 	private long start;
+
+	private String charsetName = "UTF-8";
+	private Class<? extends LineReader> lineReaderClass = MappedByteBufferLineReader.class;
 
 	public void getVector(Vector vec, final String word) {
 		final List<Integer> ngrams = dict_.getNgrams(word);
@@ -187,23 +190,21 @@ public class FastText {
 		}
 	}
 
-	public void test(InputStream in, int k) throws IOException {
+	public void test(InputStream in, int k) throws IOException, Exception {
 		int nexamples = 0, nlabels = 0;
 		double precision = 0.0f;
 		List<Integer> line = new ArrayList<Integer>();
 		List<Integer> labels = new ArrayList<Integer>();
 
-		BufferedReader dis = new BufferedReader(new InputStreamReader(in, "UTF-8"));
+		LineReader lineReader = null;
 		try {
-			String lineString;
-			while ((lineString = dis.readLine()) != null) {
-				if (Utils.isEmpty(lineString) || lineString.startsWith("#")) {
-					continue;
-				}
-				if ("quit".equals(lineString)) {
+			lineReader = lineReaderClass.getConstructor(InputStream.class, String.class).newInstance(in, charsetName);
+			String[] lineTokens;
+			while ((lineTokens = lineReader.readLineTokens()) != null) {
+				if (lineTokens.length == 1 && "quit".equals(lineTokens[0])) {
 					break;
 				}
-				dict_.getLine(lineString, line, labels, model_.rng);
+				dict_.getLine(lineTokens, line, labels, model_.rng);
 				dict_.addNgrams(line, args_.wordNgrams);
 				if (labels.size() > 0 && line.size() > 0) {
 					List<Pair<Float, Integer>> modelPredictions = new ArrayList<Pair<Float, Integer>>();
@@ -215,13 +216,14 @@ public class FastText {
 					}
 					nexamples++;
 					nlabels += labels.size();
-				} else {
-					System.out.println("FAIL Test line: " + lineString + "labels: " + labels + " line: " + line);
+//				} else {
+//					System.out.println("FAIL Test line: " + lineTokens + "labels: " + labels + " line: " + line);
 				}
 			}
 		} finally {
-			dis.close();
-			in.close();
+			if (lineReader != null) {
+				lineReader.close();
+			}
 		}
 
 		System.out.printf("P@%d: %.3f%n", k, precision / (k * nexamples));
@@ -229,10 +231,11 @@ public class FastText {
 		System.out.println("Number of examples: " + nexamples);
 	}
 
-	public void predict(String line, int k, List<Pair<Float, String>> predictions, Random urd) throws IOException {
+	public void predict(String[] lineTokens, int k, List<Pair<Float, String>> predictions, Random urd)
+			throws IOException {
 		List<Integer> words = new ArrayList<Integer>();
 		List<Integer> labels = new ArrayList<Integer>();
-		dict_.getLine(line, words, labels, urd);
+		dict_.getLine(lineTokens, words, labels, urd);
 		dict_.addNgrams(words, args_.wordNgrams);
 
 		if (words.isEmpty()) {
@@ -248,21 +251,20 @@ public class FastText {
 		}
 	}
 
-	public void predict(InputStream in, int k, boolean print_prob) throws IOException {
+	public void predict(InputStream in, int k, boolean print_prob) throws IOException, Exception {
 		List<Pair<Float, String>> predictions = new ArrayList<Pair<Float, String>>(k);
 
-		BufferedReader dis = new BufferedReader(new InputStreamReader(in, "UTF-8"));
+		LineReader lineReader = null;
+
 		try {
-			String lineString;
-			while ((lineString = dis.readLine()) != null) {
-				if (Utils.isEmpty(lineString) || lineString.startsWith("#")) {
-					continue;
-				}
-				if ("quit".equals(lineString)) {
+			lineReader = lineReaderClass.getConstructor(InputStream.class, String.class).newInstance(in, charsetName);
+			String[] lineTokens;
+			while ((lineTokens = lineReader.readLineTokens()) != null) {
+				if (lineTokens.length == 1 && "quit".equals(lineTokens[0])) {
 					break;
 				}
 				predictions.clear();
-				predict(lineString, k, predictions, model_.rng);
+				predict(lineTokens, k, predictions, model_.rng);
 				if (predictions.isEmpty()) {
 					System.out.println("n/a");
 					continue;
@@ -276,8 +278,9 @@ public class FastText {
 				System.out.println();
 			}
 		} finally {
-			dis.close();
-			in.close();
+			if (lineReader != null) {
+				lineReader.close();
+			}
 		}
 	}
 
@@ -297,21 +300,36 @@ public class FastText {
 		List<Integer> line = new ArrayList<Integer>();
 		List<Integer> labels = new ArrayList<Integer>();
 		Vector vec = new Vector(args_.dim);
-		@SuppressWarnings("resource")
-		java.util.Scanner scanner = new java.util.Scanner(System.in);
-		String word = scanner.nextLine();
-		while (!Utils.isEmpty(word)) {
-			dict_.getLine(word, line, labels, model_.rng);
-			dict_.addNgrams(line, args_.wordNgrams);
-			vec.zero();
-			for (Integer it : line) {
-				vec.addRow(input_, it);
+		LineReader lineReader = null;
+		try {
+			lineReader = lineReaderClass.getConstructor(InputStream.class, String.class).newInstance(System.in,
+					charsetName);
+			String[] lineTokens;
+			while ((lineTokens = lineReader.readLineTokens()) != null) {
+				if (lineTokens.length == 1 && "quit".equals(lineTokens[0])) {
+					break;
+				}
+				dict_.getLine(lineTokens, line, labels, model_.rng);
+				dict_.addNgrams(line, args_.wordNgrams);
+				vec.zero();
+				for (Integer it : line) {
+					vec.addRow(input_, it);
+				}
+				if (!line.isEmpty()) {
+					vec.mul(1.0f / line.size());
+				}
+				System.out.println(vec);
 			}
-			if (!line.isEmpty()) {
-				vec.mul(1.0f / line.size());
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			if (lineReader != null) {
+				try {
+					lineReader.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
-			System.out.println(vec);
-			word = scanner.nextLine();
 		}
 	}
 
@@ -336,10 +354,11 @@ public class FastText {
 			if (args_.verbose > 2) {
 				System.out.println("thread: " + threadId + " RUNNING!");
 			}
-			BufferedReader br = null;
+			LineReader lineReader = null;
 			try {
-				br = new BufferedReader(new FileReader(args_.input));
-				Utils.seekLine(br, threadId * threadFileSize / args_.thread);
+				lineReader = lineReaderClass.getConstructor(String.class, String.class).newInstance(args_.input,
+						charsetName);
+				lineReader.skipLine(threadId * threadFileSize / args_.thread);
 				Model model = new Model(input_, output_, args_, threadId);
 				if (args_.model == model_name.sup) {
 					model.setTargetCounts(dict_.getCounts(entry_type.label));
@@ -353,28 +372,24 @@ public class FastText {
 				List<Integer> line = new ArrayList<Integer>();
 				List<Integer> labels = new ArrayList<Integer>();
 
-				String lineString;
+				String[] lineTokens;
 				while (tokenCount.get() < args_.epoch * ntokens) {
-					lineString = br.readLine();
-					if (lineString == null) {
+					lineTokens = lineReader.readLineTokens();
+					if (lineTokens == null) {
 						try {
-							br.close();
-							br = new BufferedReader(new FileReader(args_.input));
+							lineReader.rewind();
 							if (args_.verbose > 2) {
 								System.out.println("Input file reloaded!");
 							}
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
-						lineString = br.readLine();
-					}
-					while (Utils.isEmpty(lineString) || lineString.startsWith("#")) {
-						lineString = br.readLine();
+						lineTokens = lineReader.readLineTokens();
 					}
 
 					float progress = (float) (tokenCount.get()) / (args_.epoch * ntokens);
 					float lr = (float) (args_.lr * (1.0 - progress));
-					localTokenCount += dict_.getLine(lineString, line, labels, model.rng);
+					localTokenCount += dict_.getLine(lineTokens, line, labels, model.rng);
 					if (args_.model == model_name.sup) {
 						dict_.addNgrams(line, args_.wordNgrams);
 						if (labels.size() == 0 || line.size() == 0) {
@@ -401,10 +416,13 @@ public class FastText {
 			} catch (IOException e) {
 				e.printStackTrace();
 				System.exit(1);
+			} catch (Exception e) {
+				e.printStackTrace();
+				System.exit(1);
 			} finally {
-				if (br != null)
+				if (lineReader != null)
 					try {
-						br.close();
+						lineReader.close();
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
@@ -484,16 +502,12 @@ public class FastText {
 	int threadCount;
 	long threadFileSize;
 
-	public void train(Args args) throws IOException {
-		train(args, null);
-	}
-
-	public void train(Args args, Dictionary.LineProcessor lineProcessor) throws IOException {
+	public void train(Args args) throws IOException, Exception {
 		args_ = args;
 		dict_ = new Dictionary(args_);
-		if (lineProcessor != null) {
-			dict_.setLineProcessor(lineProcessor);
-		}
+		dict_.setCharsetName(charsetName);
+		dict_.setLineReaderClass(lineReaderClass);
+
 		if ("-".equals(args_.input)) {
 			throw new IOException("Cannot use stdin for training!");
 		}
@@ -588,4 +602,20 @@ public class FastText {
 		this.model_ = model_;
 	}
 
+	public String getCharsetName() {
+		return charsetName;
+	}
+
+	public Class<? extends LineReader> getLineReaderClass() {
+		return lineReaderClass;
+	}
+
+	public void setCharsetName(String charsetName) {
+		this.charsetName = charsetName;
+	}
+
+	public void setLineReaderClass(Class<? extends LineReader> lineReaderClass) {
+		this.lineReaderClass = lineReaderClass;
+	}
+	
 }

@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
+import fasttext.io.BufferedLineReader;
+
 public class Main {
 
 	public static void printUsage() {
@@ -13,22 +15,19 @@ public class Main {
 				+ "  test                evaluate a supervised classifier\n"
 				+ "  predict             predict most likely labels\n"
 				+ "  predict-prob        predict most likely labels with probabilities\n"
-				+ "  skipgram            train a skipgram model\n" 
-				+ "  cbow                train a cbow model\n"
+				+ "  skipgram            train a skipgram model\n" + "  cbow                train a cbow model\n"
 				+ "  print-vectors       print vectors given a trained model\n");
 	}
 
 	public static void printTestUsage() {
 		System.out.print("usage: java -jar fasttext.jar test <model> <test-data> [<k>]\n\n"
-				+ "  <model>      model filename\n" 
-				+ "  <test-data>  test data filename (if -, read from stdin)\n"
+				+ "  <model>      model filename\n" + "  <test-data>  test data filename (if -, read from stdin)\n"
 				+ "  <k>          (optional; 1 by default) predict top k labels\n");
 	}
 
 	public static void printPredictUsage() {
 		System.out.print("usage: java -jar fasttext.jar predict[-prob] <model> <test-data> [<k>]\n\n"
-				+ "  <model>      model filename\n" 
-				+ "  <test-data>  test data filename (if -, read from stdin)\n"
+				+ "  <model>      model filename\n" + "  <test-data>  test data filename (if -, read from stdin)\n"
 				+ "  <k>          (optional; 1 by default) predict top k labels\n");
 	}
 
@@ -36,7 +35,7 @@ public class Main {
 		System.out.print("usage: java -jar fasttext.jar print-vectors <model>\n\n" + " <model> model filename\n");
 	}
 
-	public void test(String[] args) throws IOException {
+	public void test(String[] args) throws IOException, Exception {
 		int k = 1;
 		if (args.length == 3) {
 			k = 1;
@@ -47,6 +46,7 @@ public class Main {
 			System.exit(1);
 		}
 		FastText fasttext = new FastText();
+		fasttext.setLineReaderClass(BufferedLineReader.class);
 		fasttext.loadModel(args[1]);
 		String infile = args[2];
 		if ("-".equals(infile)) {
@@ -60,7 +60,7 @@ public class Main {
 		}
 	}
 
-	public void predict(String[] args) throws IOException {
+	public void predict(String[] args) throws IOException, Exception {
 		int k = 1;
 		if (args.length == 3) {
 			k = 1;
@@ -72,6 +72,7 @@ public class Main {
 		}
 		boolean print_prob = "predict-prob".equalsIgnoreCase(args[0]);
 		FastText fasttext = new FastText();
+		fasttext.setLineReaderClass(BufferedLineReader.class);
 		fasttext.loadModel(args[1]);
 
 		String infile = args[2];
@@ -92,11 +93,12 @@ public class Main {
 			System.exit(1);
 		}
 		FastText fasttext = new FastText();
+		fasttext.setLineReaderClass(BufferedLineReader.class);
 		fasttext.loadModel(args[1]);
 		fasttext.printVectors();
 	}
 
-	public void train(String[] args) throws IOException {
+	public void train(String[] args) throws IOException, Exception {
 		Args a = new Args();
 		a.parseArgs(args);
 		FastText fasttext = new FastText();
