@@ -107,7 +107,7 @@ public class FastText {
 	}
 
 	/**
-	 * Load binary model file. Set Dictionary LineProcessor afterward if needed.
+	 * Load binary model file.
 	 * 
 	 * @param filename
 	 * @throws IOException
