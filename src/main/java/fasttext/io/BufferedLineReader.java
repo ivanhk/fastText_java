@@ -9,19 +9,19 @@ import java.io.UnsupportedEncodingException;
 
 public class BufferedLineReader extends LineReader {
 
-	public String LINE_SPLITTER = " |\r|\t|\\v|\f|\0";
+	private String lineDelimitingRegex_ = " |\r|\t|\\v|\f|\0";
 
-	private BufferedReader br;
+	private BufferedReader br_;
 
 	public BufferedLineReader(String filename, String charsetName) throws IOException, UnsupportedEncodingException {
 		super(filename, charsetName);
-		FileInputStream fis = new FileInputStream(file);
-		br = new BufferedReader(new InputStreamReader(fis, charset));
+		FileInputStream fis = new FileInputStream(file_);
+		br_ = new BufferedReader(new InputStreamReader(fis, charset_));
 	}
 
 	public BufferedLineReader(InputStream inputStream, String charsetName) throws UnsupportedEncodingException {
 		super(inputStream, charsetName);
-		br = new BufferedReader(new InputStreamReader(inputStream, charset));
+		br_ = new BufferedReader(new InputStreamReader(inputStream, charset_));
 	}
 
 	@Override
@@ -33,7 +33,7 @@ public class BufferedLineReader extends LineReader {
 		long currentLine = 0;
 		long readLine = 0;
 		synchronized (lock) {
-			while (currentLine < n && (line = br.readLine()) != null) {
+			while (currentLine < n && (line = br_.readLine()) != null) {
 				readLine++;
 				if (line == null || line.isEmpty() || line.startsWith("#")) {
 					continue;
@@ -47,9 +47,9 @@ public class BufferedLineReader extends LineReader {
 	@Override
 	public String readLine() throws IOException {
 		synchronized (lock) {
-			String lineString = br.readLine();
+			String lineString = br_.readLine();
 			while (lineString != null && (lineString.isEmpty() || lineString.startsWith("#"))) {
-				lineString = br.readLine();
+				lineString = br_.readLine();
 			}
 			return lineString;
 		}
@@ -61,21 +61,21 @@ public class BufferedLineReader extends LineReader {
 		if (line == null)
 			return null;
 		else
-			return line.split(LINE_SPLITTER, -1);
+			return line.split(lineDelimitingRegex_, -1);
 	}
 
 	@Override
 	public int read(char[] cbuf, int off, int len) throws IOException {
 		synchronized (lock) {
-			return br.read(cbuf, off, len);
+			return br_.read(cbuf, off, len);
 		}
 	}
 
 	@Override
 	public void close() throws IOException {
 		synchronized (lock) {
-			if (br != null) {
-				br.close();
+			if (br_ != null) {
+				br_.close();
 			}
 		}
 	}
@@ -83,12 +83,12 @@ public class BufferedLineReader extends LineReader {
 	@Override
 	public void rewind() throws IOException {
 		synchronized (lock) {
-			if (br != null) {
-				br.close();
+			if (br_ != null) {
+				br_.close();
 			}
-			if (file != null) {
-				FileInputStream fis = new FileInputStream(file);
-				br = new BufferedReader(new InputStreamReader(fis, charset));
+			if (file_ != null) {
+				FileInputStream fis = new FileInputStream(file_);
+				br_ = new BufferedReader(new InputStreamReader(fis, charset_));
 			} else {
 				// br = new BufferedReader(new InputStreamReader(inputStream,
 				// charset));
@@ -96,4 +96,13 @@ public class BufferedLineReader extends LineReader {
 			}
 		}
 	}
+
+	public String getLineDelimitingRege() {
+		return lineDelimitingRegex_;
+	}
+
+	public void setLineDelimitingRegex(String lineDelimitingRegex) {
+		this.lineDelimitingRegex_ = lineDelimitingRegex;
+	}
+
 }

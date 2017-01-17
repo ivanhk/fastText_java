@@ -37,11 +37,11 @@ public class FastText {
 	private Matrix output_;
 	private Model model_;
 
-	private AtomicLong tokenCount;
-	private long start;
+	private AtomicLong tokenCount_;
+	private long start_;
 
-	private String charsetName = "UTF-8";
-	private Class<? extends LineReader> lineReaderClass = MappedByteBufferLineReader.class;
+	private String charsetName_ = "UTF-8";
+	private Class<? extends LineReader> lineReaderClass_ = MappedByteBufferLineReader.class;
 
 	public void getVector(Vector vec, final String word) {
 		final List<Integer> ngrams = dict_.getNgrams(word);
@@ -146,8 +146,8 @@ public class FastText {
 	}
 
 	public void printInfo(float progress, float loss) {
-		float t = (float) (System.currentTimeMillis() - start) / 1000;
-		float wst = (float) (tokenCount.get()) / t;
+		float t = (float) (System.currentTimeMillis() - start_) / 1000;
+		float wst = (float) (tokenCount_.get()) / t;
 		float lr = (float) (args_.lr * (1.0f - progress));
 		int eta = (int) (t / progress * (1 - progress) / args_.thread);
 		int etah = eta / 3600;
@@ -198,7 +198,7 @@ public class FastText {
 
 		LineReader lineReader = null;
 		try {
-			lineReader = lineReaderClass.getConstructor(InputStream.class, String.class).newInstance(in, charsetName);
+			lineReader = lineReaderClass_.getConstructor(InputStream.class, String.class).newInstance(in, charsetName_);
 			String[] lineTokens;
 			while ((lineTokens = lineReader.readLineTokens()) != null) {
 				if (lineTokens.length == 1 && "quit".equals(lineTokens[0])) {
@@ -216,8 +216,9 @@ public class FastText {
 					}
 					nexamples++;
 					nlabels += labels.size();
-//				} else {
-//					System.out.println("FAIL Test line: " + lineTokens + "labels: " + labels + " line: " + line);
+					// } else {
+					// System.out.println("FAIL Test line: " + lineTokens +
+					// "labels: " + labels + " line: " + line);
 				}
 			}
 		} finally {
@@ -257,7 +258,7 @@ public class FastText {
 		LineReader lineReader = null;
 
 		try {
-			lineReader = lineReaderClass.getConstructor(InputStream.class, String.class).newInstance(in, charsetName);
+			lineReader = lineReaderClass_.getConstructor(InputStream.class, String.class).newInstance(in, charsetName_);
 			String[] lineTokens;
 			while ((lineTokens = lineReader.readLineTokens()) != null) {
 				if (lineTokens.length == 1 && "quit".equals(lineTokens[0])) {
@@ -302,8 +303,8 @@ public class FastText {
 		Vector vec = new Vector(args_.dim);
 		LineReader lineReader = null;
 		try {
-			lineReader = lineReaderClass.getConstructor(InputStream.class, String.class).newInstance(System.in,
-					charsetName);
+			lineReader = lineReaderClass_.getConstructor(InputStream.class, String.class).newInstance(System.in,
+					charsetName_);
 			String[] lineTokens;
 			while ((lineTokens = lineReader.readLineTokens()) != null) {
 				if (lineTokens.length == 1 && "quit".equals(lineTokens[0])) {
@@ -356,8 +357,8 @@ public class FastText {
 			}
 			LineReader lineReader = null;
 			try {
-				lineReader = lineReaderClass.getConstructor(String.class, String.class).newInstance(args_.input,
-						charsetName);
+				lineReader = lineReaderClass_.getConstructor(String.class, String.class).newInstance(args_.input,
+						charsetName_);
 				lineReader.skipLine(threadId * threadFileSize / args_.thread);
 				Model model = new Model(input_, output_, args_, threadId);
 				if (args_.model == model_name.sup) {
@@ -373,7 +374,7 @@ public class FastText {
 				List<Integer> labels = new ArrayList<Integer>();
 
 				String[] lineTokens;
-				while (tokenCount.get() < args_.epoch * ntokens) {
+				while (tokenCount_.get() < args_.epoch * ntokens) {
 					lineTokens = lineReader.readLineTokens();
 					if (lineTokens == null) {
 						try {
@@ -387,7 +388,7 @@ public class FastText {
 						lineTokens = lineReader.readLineTokens();
 					}
 
-					float progress = (float) (tokenCount.get()) / (args_.epoch * ntokens);
+					float progress = (float) (tokenCount_.get()) / (args_.epoch * ntokens);
 					float lr = (float) (args_.lr * (1.0 - progress));
 					localTokenCount += dict_.getLine(lineTokens, line, labels, model.rng);
 					if (args_.model == model_name.sup) {
@@ -402,7 +403,7 @@ public class FastText {
 						skipgram(model, lr, line);
 					}
 					if (localTokenCount > args_.lrUpdateRate) {
-						tokenCount.addAndGet(localTokenCount);
+						tokenCount_.addAndGet(localTokenCount);
 						localTokenCount = 0;
 						if (threadId == 0 && args_.verbose > 1) {
 							printInfo(progress, model.getLoss());
@@ -505,8 +506,8 @@ public class FastText {
 	public void train(Args args) throws IOException, Exception {
 		args_ = args;
 		dict_ = new Dictionary(args_);
-		dict_.setCharsetName(charsetName);
-		dict_.setLineReaderClass(lineReaderClass);
+		dict_.setCharsetName(charsetName_);
+		dict_.setLineReaderClass(lineReaderClass_);
 
 		if ("-".equals(args_.input)) {
 			throw new IOException("Cannot use stdin for training!");
@@ -534,8 +535,8 @@ public class FastText {
 		}
 		output_.zero();
 
-		start = System.currentTimeMillis();
-		tokenCount = new AtomicLong(0);
+		start_ = System.currentTimeMillis();
+		tokenCount_ = new AtomicLong(0);
 		long t0 = System.currentTimeMillis();
 		threadCount = args_.thread;
 		for (int i = 0; i < args_.thread; i++) {
@@ -562,60 +563,60 @@ public class FastText {
 		}
 	}
 
-	public Args getArgs_() {
+	public Args getArgs() {
 		return args_;
 	}
 
-	public Dictionary getDict_() {
+	public Dictionary getDict() {
 		return dict_;
 	}
 
-	public Matrix getInput_() {
+	public Matrix getInput() {
 		return input_;
 	}
 
-	public Matrix getOutput_() {
+	public Matrix getOutput() {
 		return output_;
 	}
 
-	public Model getModel_() {
+	public Model getModel() {
 		return model_;
 	}
 
-	public void setArgs_(Args args_) {
-		this.args_ = args_;
+	public void setArgs(Args args) {
+		this.args_ = args;
 	}
 
-	public void setDict_(Dictionary dict_) {
-		this.dict_ = dict_;
+	public void setDict(Dictionary dict) {
+		this.dict_ = dict;
 	}
 
-	public void setInput_(Matrix input_) {
-		this.input_ = input_;
+	public void setInput(Matrix input) {
+		this.input_ = input;
 	}
 
-	public void setOutput_(Matrix output_) {
-		this.output_ = output_;
+	public void setOutput(Matrix output) {
+		this.output_ = output;
 	}
 
-	public void setModel_(Model model_) {
-		this.model_ = model_;
+	public void setModel(Model model) {
+		this.model_ = model;
 	}
 
 	public String getCharsetName() {
-		return charsetName;
+		return charsetName_;
 	}
 
 	public Class<? extends LineReader> getLineReaderClass() {
-		return lineReaderClass;
+		return lineReaderClass_;
 	}
 
 	public void setCharsetName(String charsetName) {
-		this.charsetName = charsetName;
+		this.charsetName_ = charsetName;
 	}
 
 	public void setLineReaderClass(Class<? extends LineReader> lineReaderClass) {
-		this.lineReaderClass = lineReaderClass;
+		this.lineReaderClass_ = lineReaderClass;
 	}
-	
+
 }

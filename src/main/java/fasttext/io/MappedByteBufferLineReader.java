@@ -13,13 +13,13 @@ import java.util.List;
 
 public class MappedByteBufferLineReader extends LineReader {
 
-	private int STRING_BUF_SIZE = 1024;
+	private int string_buf_size_ = 1024;
 
 	private RandomAccessFile raf;
 	private FileChannel channel;
 	private ByteBuffer byteBuffer; // MappedByteBuffer
 
-	private byte[] bytes = new byte[STRING_BUF_SIZE];
+	private byte[] bytes = new byte[string_buf_size_];
 	private StringBuilder sb = new StringBuilder();
 	private List<String> tokens = new ArrayList<String>();
 	private byte default_byte = 0;
@@ -27,7 +27,7 @@ public class MappedByteBufferLineReader extends LineReader {
 	public MappedByteBufferLineReader(String filename, String charsetName)
 			throws IOException, UnsupportedEncodingException {
 		super(filename, charsetName);
-		raf = new RandomAccessFile(file, "r");
+		raf = new RandomAccessFile(file_, "r");
 		channel = raf.getChannel();
 		byteBuffer = channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size());
 	}
@@ -136,13 +136,13 @@ public class MappedByteBufferLineReader extends LineReader {
 		while (byteBuffer.hasRemaining() && !(b >= 10 && b <= 13) && b != 0) {
 			bytes[++i] = (byte) b;
 			b = byteBuffer.get();
-			if (i == STRING_BUF_SIZE - 1) {
-				sb.append(new String(bytes, charset));
+			if (i == string_buf_size_ - 1) {
+				sb.append(new String(bytes, charset_));
 				i = -1;
 				Arrays.fill(bytes, default_byte);
 			}
 		}
-		sb.append(new String(bytes, 0, i + 1, charset));
+		sb.append(new String(bytes, 0, i + 1, charset_));
 		return sb.toString();
 	}
 
@@ -160,7 +160,7 @@ public class MappedByteBufferLineReader extends LineReader {
 			if (b >= 10 && b <= 13) {
 				break;
 			} else if (b == 9 || b == 32 || b == 0) {
-				sb.append(new String(bytes, 0, i + 1, charset));
+				sb.append(new String(bytes, 0, i + 1, charset_));
 				tokens.add(sb.toString());
 				sb.setLength(0);
 				i = -1;
@@ -168,15 +168,15 @@ public class MappedByteBufferLineReader extends LineReader {
 			} else {
 				bytes[++i] = (byte) b;
 				b = byteBuffer.get();
-				if (i == STRING_BUF_SIZE - 1) {
-					sb.append(new String(bytes, charset));
+				if (i == string_buf_size_ - 1) {
+					sb.append(new String(bytes, charset_));
 					i = -1;
 					Arrays.fill(bytes, default_byte);
 				}
 			}
 		}
 
-		sb.append(new String(bytes, 0, i + 1, charset));
+		sb.append(new String(bytes, 0, i + 1, charset_));
 		tokens.add(sb.toString());
 		return tokens.isEmpty() && !byteBuffer.hasRemaining() ? null : tokens.toArray(new String[tokens.size()]);
 	}

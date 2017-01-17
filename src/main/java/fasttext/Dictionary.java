@@ -86,8 +86,8 @@ public class Dictionary {
 
 	private Args args_;
 
-	private String charsetName = "UTF-8";
-	private Class<? extends LineReader> lineReaderClass = BufferedLineReader.class;
+	private String charsetName_ = "UTF-8";
+	private Class<? extends LineReader> lineReaderClass_ = BufferedLineReader.class;
 
 	public Dictionary(Args args) {
 		args_ = args;
@@ -238,7 +238,7 @@ public class Dictionary {
 		LineReader lineReader = null;
 
 		try {
-			lineReader = lineReaderClass.getConstructor(String.class, String.class).newInstance(file, charsetName);
+			lineReader = lineReaderClass_.getConstructor(String.class, String.class).newInstance(file, charsetName_);
 			long minThreshold = 1;
 			String[] lineTokens;
 			while ((lineTokens = lineReader.readLineTokens()) != null) {
@@ -449,40 +449,40 @@ public class Dictionary {
 		return builder.toString();
 	}
 
-	public List<entry> getWords_() {
+	public List<entry> getWords() {
 		return words_;
 	}
 
-	public List<Float> getPdiscard_() {
+	public List<Float> getPdiscard() {
 		return pdiscard_;
 	}
 
-	public Map<Long, Integer> getWord2int_() {
+	public Map<Long, Integer> getWord2int() {
 		return word2int_;
 	}
 
-	public int getSize_() {
+	public int getSize() {
 		return size_;
 	}
 
-	public Args getArgs_() {
+	public Args getArgs() {
 		return args_;
 	}
 
 	public String getCharsetName() {
-		return charsetName;
+		return charsetName_;
 	}
 
 	public Class<? extends LineReader> getLineReaderClass() {
-		return lineReaderClass;
+		return lineReaderClass_;
 	}
 
 	public void setCharsetName(String charsetName) {
-		this.charsetName = charsetName;
+		this.charsetName_ = charsetName;
 	}
 
 	public void setLineReaderClass(Class<? extends LineReader> lineReaderClass) {
-		this.lineReaderClass = lineReaderClass;
+		this.lineReaderClass_ = lineReaderClass;
 	}
 
 }

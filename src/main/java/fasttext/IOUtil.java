@@ -19,24 +19,24 @@ public class IOUtil {
 	public IOUtil() {
 	}
 
-	private int STRING_BUF_SIZE = 50;
-	private byte[] int_bytes = new byte[4];
-	private byte[] long_bytes = new byte[8];
-	private byte[] float_bytes = new byte[4];
-	private byte[] double_bytes = new byte[8];
-	private byte[] string_bytes = new byte[STRING_BUF_SIZE];
-	private StringBuilder stringBuilder = new StringBuilder();
-	private ByteBuffer float_array_bytebuffer = null;
-	private byte[] float_array_bytes = null;
+	private int string_buf_size_ = 50;
+	private byte[] int_bytes_ = new byte[4];
+	private byte[] long_bytes_ = new byte[8];
+	private byte[] float_bytes_ = new byte[4];
+	private byte[] double_bytes_ = new byte[8];
+	private byte[] string_bytes_ = new byte[string_buf_size_];
+	private StringBuilder stringBuilder_ = new StringBuilder();
+	private ByteBuffer float_array_bytebuffer_ = null;
+	private byte[] float_array_bytes_ = null;
 
 	public void setStringBufferSize(int size) {
-		STRING_BUF_SIZE = size;
-		string_bytes = new byte[STRING_BUF_SIZE];
+		string_buf_size_ = size;
+		string_bytes_ = new byte[string_buf_size_];
 	}
 
 	public void setFloatArrayBufferSize(int itemSize) {
-		float_array_bytebuffer = ByteBuffer.allocate(itemSize * 4).order(ByteOrder.LITTLE_ENDIAN);
-		float_array_bytes = new byte[itemSize * 4];
+		float_array_bytebuffer_ = ByteBuffer.allocate(itemSize * 4).order(ByteOrder.LITTLE_ENDIAN);
+		float_array_bytes_ = new byte[itemSize * 4];
 	}
 
 	public int readByte(InputStream is) throws IOException {
@@ -44,8 +44,8 @@ public class IOUtil {
 	}
 
 	public int readInt(InputStream is) throws IOException {
-		is.read(int_bytes);
-		return getInt(int_bytes);
+		is.read(int_bytes_);
+		return getInt(int_bytes_);
 	}
 
 	public int getInt(byte[] b) {
@@ -53,8 +53,8 @@ public class IOUtil {
 	}
 
 	public long readLong(InputStream is) throws IOException {
-		is.read(long_bytes);
-		return getLong(long_bytes);
+		is.read(long_bytes_);
+		return getLong(long_bytes_);
 	}
 
 	public long getLong(byte[] b) {
@@ -63,14 +63,14 @@ public class IOUtil {
 	}
 
 	public float readFloat(InputStream is) throws IOException {
-		is.read(float_bytes);
-		return getFloat(float_bytes);
+		is.read(float_bytes_);
+		return getFloat(float_bytes_);
 	}
 
 	public void readFloat(InputStream is, float[] data) throws IOException {
-		is.read(float_array_bytes);
-		float_array_bytebuffer.clear();
-		((ByteBuffer) float_array_bytebuffer.put(float_array_bytes).flip()).asFloatBuffer().get(data);
+		is.read(float_array_bytes_);
+		float_array_bytebuffer_.clear();
+		((ByteBuffer) float_array_bytebuffer_.put(float_array_bytes_).flip()).asFloatBuffer().get(data);
 	}
 
 	public float getFloat(byte[] b) {
@@ -79,8 +79,8 @@ public class IOUtil {
 	}
 
 	public double readDouble(InputStream is) throws IOException {
-		is.read(double_bytes);
-		return getDouble(double_bytes);
+		is.read(double_bytes_);
+		return getDouble(double_bytes_);
 	}
 
 	public double getDouble(byte[] b) {
@@ -93,19 +93,19 @@ public class IOUtil {
 			return null;
 		}
 		int i = -1;
-		stringBuilder.setLength(0);
+		stringBuilder_.setLength(0);
 		// ascii space, \n, \0
 		while (b > -1 && b != 32 && b != 10 && b != 0) {
-			string_bytes[++i] = (byte) b;
+			string_bytes_[++i] = (byte) b;
 			b = is.read();
-			if (i == STRING_BUF_SIZE - 1) {
-				stringBuilder.append(new String(string_bytes));
+			if (i == string_buf_size_ - 1) {
+				stringBuilder_.append(new String(string_bytes_));
 				i = -1;
-				Arrays.fill(string_bytes, byteDefaultValue);
+				Arrays.fill(string_bytes_, byteDefaultValue);
 			}
 		}
-		stringBuilder.append(new String(string_bytes, 0, i + 1));
-		return stringBuilder.toString();
+		stringBuilder_.append(new String(string_bytes_, 0, i + 1));
+		return stringBuilder_.toString();
 	}
 
 	public int intToByte(int i) {
@@ -113,24 +113,24 @@ public class IOUtil {
 	}
 
 	public byte[] intToByteArray(int i) {
-		int_bytes[0] = (byte) ((i >> 0) & 0xff);
-		int_bytes[1] = (byte) ((i >> 8) & 0xff);
-		int_bytes[2] = (byte) ((i >> 16) & 0xff);
-		int_bytes[3] = (byte) ((i >> 24) & 0xff);
-		return int_bytes;
+		int_bytes_[0] = (byte) ((i >> 0) & 0xff);
+		int_bytes_[1] = (byte) ((i >> 8) & 0xff);
+		int_bytes_[2] = (byte) ((i >> 16) & 0xff);
+		int_bytes_[3] = (byte) ((i >> 24) & 0xff);
+		return int_bytes_;
 	}
 
 	public byte[] longToByteArray(long l) {
-		long_bytes[0] = (byte) ((l >> 0) & 0xff);
-		long_bytes[1] = (byte) ((l >> 8) & 0xff);
-		long_bytes[2] = (byte) ((l >> 16) & 0xff);
-		long_bytes[3] = (byte) ((l >> 24) & 0xff);
-		long_bytes[4] = (byte) ((l >> 32) & 0xff);
-		long_bytes[5] = (byte) ((l >> 40) & 0xff);
-		long_bytes[6] = (byte) ((l >> 48) & 0xff);
-		long_bytes[7] = (byte) ((l >> 56) & 0xff);
+		long_bytes_[0] = (byte) ((l >> 0) & 0xff);
+		long_bytes_[1] = (byte) ((l >> 8) & 0xff);
+		long_bytes_[2] = (byte) ((l >> 16) & 0xff);
+		long_bytes_[3] = (byte) ((l >> 24) & 0xff);
+		long_bytes_[4] = (byte) ((l >> 32) & 0xff);
+		long_bytes_[5] = (byte) ((l >> 40) & 0xff);
+		long_bytes_[6] = (byte) ((l >> 48) & 0xff);
+		long_bytes_[7] = (byte) ((l >> 56) & 0xff);
 
-		return long_bytes;
+		return long_bytes_;
 	}
 
 	public byte[] floatToByteArray(float f) {
@@ -138,9 +138,9 @@ public class IOUtil {
 	}
 
 	public byte[] floatToByteArray(float[] f) {
-		float_array_bytebuffer.clear();
-		float_array_bytebuffer.asFloatBuffer().put(f);
-		return float_array_bytebuffer.array();
+		float_array_bytebuffer_.clear();
+		float_array_bytebuffer_.asFloatBuffer().put(f);
+		return float_array_bytebuffer_.array();
 	}
 
 	public byte[] doubleToByteArray(double d) {

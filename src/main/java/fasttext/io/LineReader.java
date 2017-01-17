@@ -9,9 +9,9 @@ import java.nio.charset.Charset;
 
 public abstract class LineReader extends Reader {
 
-	protected InputStream inputStream = null;
-	protected File file = null;
-	protected Charset charset = null;
+	protected InputStream inputStream_ = null;
+	protected File file_ = null;
+	protected Charset charset_ = null;
 
 	protected LineReader() {
 		super();
@@ -23,14 +23,14 @@ public abstract class LineReader extends Reader {
 
 	public LineReader(String filename, String charsetName) throws IOException, UnsupportedEncodingException {
 		this();
-		this.file = new File(filename);
-		this.charset = Charset.forName(charsetName);
+		this.file_ = new File(filename);
+		this.charset_ = Charset.forName(charsetName);
 	}
 
 	public LineReader(InputStream inputStream, String charsetName) throws UnsupportedEncodingException {
 		this();
-		this.inputStream = inputStream;
-		this.charset = Charset.forName(charsetName);
+		this.inputStream_ = inputStream;
+		this.charset_ = Charset.forName(charsetName);
 	}
 
 	/**
