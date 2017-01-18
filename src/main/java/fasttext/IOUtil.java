@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Arrays;
 
 /**
  * Read/write cpp primitive type
@@ -14,12 +13,10 @@ import java.util.Arrays;
  */
 public class IOUtil {
 
-	private static final byte byteDefaultValue = 0;
-
 	public IOUtil() {
 	}
 
-	private int string_buf_size_ = 50;
+	private int string_buf_size_ = 128;
 	private byte[] int_bytes_ = new byte[4];
 	private byte[] long_bytes_ = new byte[8];
 	private byte[] float_bytes_ = new byte[4];
@@ -101,7 +98,6 @@ public class IOUtil {
 			if (i == string_buf_size_ - 1) {
 				stringBuilder_.append(new String(string_bytes_));
 				i = -1;
-				Arrays.fill(string_bytes_, byteDefaultValue);
 			}
 		}
 		stringBuilder_.append(new String(string_bytes_, 0, i + 1));

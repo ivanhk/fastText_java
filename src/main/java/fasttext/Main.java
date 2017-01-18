@@ -4,8 +4,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 
-import fasttext.io.BufferedLineReader;
-
 public class Main {
 
 	public static void printUsage() {
@@ -50,7 +48,6 @@ public class Main {
 			System.exit(1);
 		}
 		FastText fasttext = new FastText();
-		fasttext.setLineReaderClass(BufferedLineReader.class);
 		fasttext.loadModel(args[1]);
 		String infile = args[2];
 		if ("-".equals(infile)) {
@@ -76,7 +73,6 @@ public class Main {
 		}
 		boolean print_prob = "predict-prob".equalsIgnoreCase(args[0]);
 		FastText fasttext = new FastText();
-		fasttext.setLineReaderClass(BufferedLineReader.class);
 		fasttext.loadModel(args[1]);
 
 		String infile = args[2];
@@ -97,7 +93,6 @@ public class Main {
 			System.exit(1);
 		}
 		FastText fasttext = new FastText();
-		fasttext.setLineReaderClass(BufferedLineReader.class);
 		fasttext.loadModel(args[1]);
 		fasttext.printVectors();
 	}
