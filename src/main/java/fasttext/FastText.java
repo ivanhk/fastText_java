@@ -287,13 +287,25 @@ public class FastText {
 
 	public void wordVectors() {
 		Vector vec = new Vector(args_.dim);
-		@SuppressWarnings("resource")
-		java.util.Scanner scanner = new java.util.Scanner(System.in);
-		String word = scanner.nextLine();
-		while (!Utils.isEmpty(word)) {
-			getVector(vec, word);
-			System.out.println(word + " " + vec);
-			word = scanner.nextLine();
+		LineReader lineReader = null;
+		try {
+			lineReader = lineReaderClass_.getConstructor(InputStream.class, String.class).newInstance(System.in,
+					charsetName_);
+			String word;
+			while (!Utils.isEmpty((word = lineReader.readLine()))) {
+				getVector(vec, word);
+				System.out.println(word + " " + vec);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			if (lineReader != null) {
+				try {
+					lineReader.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
 		}
 	}
 

@@ -1,7 +1,5 @@
 package fasttext;
 
-import java.util.Arrays;
-
 public class Vector {
 
 	public int m_;
@@ -80,9 +78,12 @@ public class Vector {
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
-		builder.append("Vector [data_=");
-		builder.append(Arrays.toString(data_));
-		builder.append("]");
+		for (float data : data_) {
+			builder.append(data).append(' ');
+		}
+		if (builder.length() > 1) {
+			builder.setLength(builder.length() - 1);
+		}
 		return builder.toString();
 	}
 

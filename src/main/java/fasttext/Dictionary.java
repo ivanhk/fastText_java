@@ -116,7 +116,7 @@ public class Dictionary {
 			entry e = new entry();
 			e.word = w;
 			e.count = 1;
-			e.type = w.contains(args_.label) ? entry_type.label : entry_type.word;
+			e.type = w.startsWith(args_.label) ? entry_type.label : entry_type.word;
 			words_.add(e);
 			word2int_.put(h, size_++);
 		} else {
