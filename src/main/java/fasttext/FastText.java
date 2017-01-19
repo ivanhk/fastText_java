@@ -41,7 +41,7 @@ public class FastText {
 	private long start_;
 
 	private String charsetName_ = "UTF-8";
-	private Class<? extends LineReader> lineReaderClass_ = MappedByteBufferLineReader.class;
+	private Class<? extends LineReader> lineReaderClass_ = BufferedLineReader.class;
 
 	public void getVector(Vector vec, final String word) {
 		final List<Integer> ngrams = dict_.getNgrams(word);
