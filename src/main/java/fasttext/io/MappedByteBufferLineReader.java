@@ -1,5 +1,6 @@
 package fasttext.io;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
@@ -12,13 +13,16 @@ import java.util.List;
 
 public class MappedByteBufferLineReader extends LineReader {
 
-	private int string_buf_size_ = 1024;
+	private static int DEFAULT_BUFFER_SIZE = 1024;
 
+	private volatile ByteBuffer byteBuffer_ = null; // MappedByteBuffer
 	private RandomAccessFile raf_ = null;
 	private FileChannel channel_ = null;
-	private ByteBuffer byteBuffer_ = null; // MappedByteBuffer
+	private byte[] bytes_ = null;
 
-	private byte[] bytes_ = new byte[string_buf_size_];
+	private int string_buf_size_ = DEFAULT_BUFFER_SIZE;
+	private boolean fillLine_ = false;
+
 	private StringBuilder sb_ = new StringBuilder();
 	private List<String> tokens_ = new ArrayList<String>();
 
@@ -28,11 +32,23 @@ public class MappedByteBufferLineReader extends LineReader {
 		raf_ = new RandomAccessFile(file_, "r");
 		channel_ = raf_.getChannel();
 		byteBuffer_ = channel_.map(FileChannel.MapMode.READ_ONLY, 0, channel_.size());
+		bytes_ = new byte[string_buf_size_];
 	}
 
 	public MappedByteBufferLineReader(InputStream inputStream, String charsetName) throws UnsupportedEncodingException {
-		super(inputStream, charsetName);
-		byteBuffer_ = ByteBuffer.allocateDirect(string_buf_size_);
+		this(inputStream, charsetName, DEFAULT_BUFFER_SIZE);
+	}
+
+	public MappedByteBufferLineReader(InputStream inputStream, String charsetName, int buf_size)
+			throws UnsupportedEncodingException {
+		super(inputStream instanceof BufferedInputStream ? inputStream : new BufferedInputStream(inputStream),
+				charsetName);
+		string_buf_size_ = buf_size;
+		byteBuffer_ = ByteBuffer.allocateDirect(string_buf_size_); // ByteBuffer.allocate(string_buf_size_);
+		bytes_ = new byte[string_buf_size_];
+		if (inputStream == System.in) {
+			fillLine_ = true;
+		}
 	}
 
 	@Override
@@ -105,6 +121,21 @@ public class MappedByteBufferLineReader extends LineReader {
 			CharBuffer charBuffer = byteBuffer_.asCharBuffer();
 			int length = Math.min(len, charBuffer.remaining());
 			charBuffer.get(cbuf, off, length);
+
+			if (inputStream_ != null) {
+				off += length;
+
+				while (off < len) {
+					fillByteBuffer();
+					if (!byteBuffer_.hasRemaining()) {
+						break;
+					}
+					charBuffer = byteBuffer_.asCharBuffer();
+					length = Math.min(len, charBuffer.remaining());
+					charBuffer.get(cbuf, off, length);
+					off += length;
+				}
+			}
 			return length == len ? len : -1;
 		}
 	}
@@ -129,7 +160,7 @@ public class MappedByteBufferLineReader extends LineReader {
 	}
 
 	protected String getLine() throws IOException {
-		fill(true);
+		fillByteBuffer();
 		if (!byteBuffer_.hasRemaining()) {
 			return null;
 		}
@@ -145,8 +176,8 @@ public class MappedByteBufferLineReader extends LineReader {
 			if (i == string_buf_size_ - 1) {
 				sb_.append(new String(bytes_, charset_));
 				i = -1;
-				fill(true);
 			}
+			fillByteBuffer();
 		} while (byteBuffer_.hasRemaining());
 
 		sb_.append(new String(bytes_, 0, i + 1, charset_));
@@ -156,7 +187,7 @@ public class MappedByteBufferLineReader extends LineReader {
 	// " |\r|\t|\\v|\f|\0"
 	// 32 ' ', 9 \t, 10 \n, 11 \\v, 12 \f, 13 \r, 0 \0
 	protected String[] getLineTokens() throws IOException {
-		fill(true);
+		fillByteBuffer();
 		if (!byteBuffer_.hasRemaining()) {
 			return null;
 		}
@@ -175,15 +206,14 @@ public class MappedByteBufferLineReader extends LineReader {
 				tokens_.add(sb_.toString());
 				sb_.setLength(0);
 				i = -1;
-				fill(false);
 			} else {
 				bytes_[++i] = (byte) b;
 				if (i == string_buf_size_ - 1) {
 					sb_.append(new String(bytes_, charset_));
 					i = -1;
-					fill(true);
 				}
 			}
+			fillByteBuffer();
 		} while (byteBuffer_.hasRemaining());
 
 		sb_.append(new String(bytes_, 0, i + 1, charset_));
@@ -191,25 +221,26 @@ public class MappedByteBufferLineReader extends LineReader {
 		return tokens_.toArray(new String[tokens_.size()]);
 	}
 
-	private void fill(boolean clear) throws IOException {
-		if (inputStream_ == null) {
+	private void fillByteBuffer() throws IOException {
+		if (inputStream_ == null || byteBuffer_.hasRemaining()) {
 			return;
 		}
 
-		if (clear || !byteBuffer_.hasRemaining()) {
-			byteBuffer_.clear();
-		} else {
-			byteBuffer_.compact();
-		}
+		byteBuffer_.clear();
 
 		int b;
-		do {
+		for (int i = 0; i < string_buf_size_; i++) {
 			b = inputStream_.read();
 			if (b < 0) { // END OF STREAM
 				break;
 			}
 			byteBuffer_.put((byte) b);
-		} while (byteBuffer_.hasRemaining() && b > 0 && !(b >= 10 && b <= 13));
+			if (fillLine_) {
+				if ((b >= 10 && b <= 13) || b == 0) {
+					break;
+				}
+			}
+		}
 
 		byteBuffer_.flip();
 	}
