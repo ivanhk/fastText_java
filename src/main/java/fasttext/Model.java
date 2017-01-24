@@ -174,10 +174,11 @@ public class Model {
 	public void findKBest(int k, List<Pair<Float, Integer>> heap, Vector hidden, Vector output) {
 		computeOutputSoftmax(hidden, output);
 		for (int i = 0; i < osz_; i++) {
-			if (heap.size() == k && log(output.get(i)) < heap.get(0).getKey()) {
+			if (heap.size() == k && log(output.get(i)) < heap.get(heap.size() - 1).getKey()) {
 				continue;
 			}
 			heap.add(new Pair<Float, Integer>(log(output.get(i)), i));
+			Collections.sort(heap, comparePairs);
 			if (heap.size() > k) {
 				Collections.sort(heap, comparePairs);
 				heap.remove(heap.size() - 1); // pop last
