@@ -302,8 +302,7 @@ public class Dictionary {
 			word2int_.put(h, size_++);
 			if (entry_type.word == _entry.type) {
 				nwords_++;
-			}
-			if (entry_type.label == _entry.type) {
+			} else if (entry_type.label == _entry.type) {
 				nlabels_++;
 			}
 		}
@@ -312,9 +311,9 @@ public class Dictionary {
 	private transient Comparator<entry> entry_comparator = new Comparator<entry>() {
 		@Override
 		public int compare(entry o1, entry o2) {
-			int cmp = o1.type.value > o2.type.value ? +1 : o1.type.value < o2.type.value ? -1 : 0;
+			int cmp = (o1.type.value < o2.type.value) ? -1 : ((o1.type.value == o2.type.value) ? 0 : 1);
 			if (cmp == 0) {
-				cmp = o2.count > o1.count ? +1 : o2.count < o1.count ? -1 : 0;
+				cmp = (o2.count < o1.count) ? -1 : ((o2.count == o1.count) ? 0 : 1);
 			}
 			return cmp;
 		}

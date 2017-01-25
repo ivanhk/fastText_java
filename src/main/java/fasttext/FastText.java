@@ -16,7 +16,6 @@ import java.io.Writer;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
 import fasttext.Args.model_name;
@@ -232,11 +231,40 @@ public class FastText {
 		System.out.println("Number of examples: " + nexamples);
 	}
 
-	public void predict(String[] lineTokens, int k, List<Pair<Float, String>> predictions, Random urd)
-			throws IOException {
+	/**
+	 * Thread-safe predict api
+	 * 
+	 * @param lineTokens
+	 * @param k
+	 * @return
+	 */
+	public List<Pair<Float, String>> predict(String[] lineTokens, int k) {
 		List<Integer> words = new ArrayList<Integer>();
 		List<Integer> labels = new ArrayList<Integer>();
-		dict_.getLine(lineTokens, words, labels, urd);
+		dict_.getLine(lineTokens, words, labels, model_.rng);
+		dict_.addNgrams(words, args_.wordNgrams);
+
+		if (words.isEmpty()) {
+			return null;
+		}
+
+		Vector hidden = new Vector(args_.dim);
+		Vector output = new Vector(dict_.nlabels());
+		List<Pair<Float, Integer>> modelPredictions = new ArrayList<Pair<Float, Integer>>(k + 1);
+
+		model_.predict(words, k, modelPredictions, hidden, output);
+
+		List<Pair<Float, String>> predictions = new ArrayList<Pair<Float, String>>(k);
+		for (Pair<Float, Integer> pair : modelPredictions) {
+			predictions.add(new Pair<Float, String>(pair.getKey(), dict_.getLabel(pair.getValue())));
+		}
+		return predictions;
+	}
+
+	public void predict(String[] lineTokens, int k, List<Pair<Float, String>> predictions) throws IOException {
+		List<Integer> words = new ArrayList<Integer>();
+		List<Integer> labels = new ArrayList<Integer>();
+		dict_.getLine(lineTokens, words, labels, model_.rng);
 		dict_.addNgrams(words, args_.wordNgrams);
 
 		if (words.isEmpty()) {
@@ -263,7 +291,7 @@ public class FastText {
 					break;
 				}
 				predictions.clear();
-				predict(lineTokens, k, predictions, model_.rng);
+				predict(lineTokens, k, predictions);
 				if (predictions.isEmpty()) {
 					System.out.println("n/a");
 					continue;
