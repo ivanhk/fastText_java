@@ -187,12 +187,13 @@ public class Model {
 	}
 
 	public void dfs(int k, int node, float score, List<Pair<Float, Integer>> heap, Vector hidden) {
-		if (heap.size() == k && score < heap.get(0).getKey()) {
+		if (heap.size() == k && score < heap.get(heap.size() - 1).getKey()) {
 			return;
 		}
 
 		if (tree.get(node).left == -1 && tree.get(node).right == -1) {
 			heap.add(new Pair<Float, Integer>(score, node));
+			Collections.sort(heap, comparePairs);
 			if (heap.size() > k) {
 				Collections.sort(heap, comparePairs);
 				heap.remove(heap.size() - 1); // pop last
