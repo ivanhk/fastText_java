@@ -242,10 +242,8 @@ public class FastText {
 		if (words.isEmpty()) {
 			return;
 		}
-		Vector hidden = new Vector(args_.dim);
-		Vector output = new Vector(dict_.nlabels());
 		List<Pair<Float, Integer>> modelPredictions = new ArrayList<Pair<Float, Integer>>(k + 1);
-		model_.predict(words, k, modelPredictions, hidden, output);
+		model_.predict(words, k, modelPredictions);
 		predictions.clear();
 		for (Pair<Float, Integer> pair : modelPredictions) {
 			predictions.add(new Pair<Float, String>(pair.getKey(), dict_.getLabel(pair.getValue())));
