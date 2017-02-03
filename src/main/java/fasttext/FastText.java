@@ -89,7 +89,9 @@ public class FastText {
 		if (file.exists()) {
 			file.delete();
 		}
-		file.getParentFile().mkdirs();
+		if (file.getParentFile() != null) {
+			file.getParentFile().mkdirs();
+		}
 		if (args_.verbose > 1) {
 			System.out.println("Saving model to " + file.getCanonicalPath().toString());
 		}
