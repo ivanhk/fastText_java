@@ -337,6 +337,9 @@ public class Dictionary {
 	}
 
 	public void addNgrams(List<Integer> line, int n) {
+		if (n <= 1) {
+			return;
+		}
 		int line_size = line.size();
 		for (int i = 0; i < line_size; i++) {
 			long h = (long) line.get(i);
