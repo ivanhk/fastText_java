@@ -54,15 +54,23 @@ public class FastText {
 	}
 
 	public void saveVectors() throws IOException {
+		if (Utils.isEmpty(args_.output)) {
+			if (args_.verbose > 1) {
+				System.out.println("output is empty, skip save vector file");
+			}
+			return;
+		}
+
 		File file = new File(args_.output + ".vec");
 		if (file.exists()) {
 			file.delete();
 		}
-		file.getParentFile().mkdirs();
+		if (file.getParentFile() != null) {
+			file.getParentFile().mkdirs();
+		}
 		if (args_.verbose > 1) {
 			System.out.println("Saving Vectors to " + file.getCanonicalPath().toString());
 		}
-
 		Vector vec = new Vector(args_.dim);
 		DecimalFormat df = new DecimalFormat("0.#####");
 		Writer writer = new OutputStreamWriter(new BufferedOutputStream(new FileOutputStream(file)), "UTF-8");
@@ -85,6 +93,13 @@ public class FastText {
 	}
 
 	public void saveModel() throws IOException {
+		if (Utils.isEmpty(args_.output)) {
+			if (args_.verbose > 1) {
+				System.out.println("output is empty, skip save model file");
+			}
+			return;
+		}
+
 		File file = new File(args_.output + ".bin");
 		if (file.exists()) {
 			file.delete();
