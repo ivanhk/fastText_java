@@ -163,13 +163,14 @@ public class FastText {
 
 	public void printInfo(float progress, float loss) {
 		float t = (float) (System.currentTimeMillis() - start_) / 1000;
-		float wst = (float) (tokenCount_.get()) / t;
+		float ws = (float) (tokenCount_.get()) / t;
+		float wst = (float) (tokenCount_.get()) / t / args_.thread;
 		float lr = (float) (args_.lr * (1.0f - progress));
-		int eta = (int) (t / progress * (1 - progress) / args_.thread);
+		int eta = (int) (t / progress * (1 - progress));
 		int etah = eta / 3600;
 		int etam = (eta - etah * 3600) / 60;
-		System.out.printf("\rProgress: %.1f%% words/sec/thread: %d lr: %.6f loss: %.6f eta: %d h %d m", 100 * progress,
-				(int) wst, lr, loss, etah, etam);
+		System.out.printf("\rProgress: %.1f%% words/sec: %d words/sec/thread: %d lr: %.6f loss: %.6f eta: %d h %d m",
+				100 * progress, (int) ws, (int) wst, lr, loss, etah, etam);
 	}
 
 	public void supervised(Model model, float lr, final List<Integer> line, final List<Integer> labels) {
@@ -402,6 +403,7 @@ public class FastText {
 		int threadId;
 
 		public TrainThread(FastText ft, int threadId) {
+			super("FT-TrainThread-" + threadId);
 			this.ft = ft;
 			this.threadId = threadId;
 		}
@@ -460,7 +462,7 @@ public class FastText {
 					if (localTokenCount > args_.lrUpdateRate) {
 						tokenCount_.addAndGet(localTokenCount);
 						localTokenCount = 0;
-						if (threadId == 0 && args_.verbose > 1) {
+						if (threadId == 0 && args_.verbose > 1 && (System.currentTimeMillis() - start_) % 1000 == 0) {
 							printInfo(progress, model.getLoss());
 						}
 					}
