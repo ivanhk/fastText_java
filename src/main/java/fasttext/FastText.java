@@ -156,8 +156,12 @@ public class FastText {
 				model_.setTargetCounts(dict_.getCounts(entry_type.word));
 			}
 		} finally {
-			bis.close();
-			dis.close();
+			if (bis != null) {
+				bis.close();
+			}
+			if (dis != null) {
+				dis.close();
+			}
 		}
 	}
 
@@ -412,6 +416,7 @@ public class FastText {
 			if (args_.verbose > 2) {
 				System.out.println("thread: " + threadId + " RUNNING!");
 			}
+			Exception catchedException = null;
 			LineReader lineReader = null;
 			try {
 				lineReader = lineReaderClass_.getConstructor(String.class, String.class).newInstance(args_.input,
@@ -471,12 +476,8 @@ public class FastText {
 				if (threadId == 0 && args_.verbose > 1) {
 					printInfo(1.0f, model.getLoss());
 				}
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.exit(1);
 			} catch (Exception e) {
-				e.printStackTrace();
-				System.exit(1);
+				catchedException = e;
 			} finally {
 				if (lineReader != null)
 					try {
@@ -493,6 +494,9 @@ public class FastText {
 				}
 				ft.threadCount--;
 				ft.notify();
+				if (catchedException != null) {
+					throw new RuntimeException(catchedException);
+				}
 			}
 		}
 	}
@@ -516,8 +520,9 @@ public class FastText {
 			words = new ArrayList<String>(n);
 
 			if (dim != args_.dim) {
-				System.err.println("Dimension of pretrained vectors does not match -dim option");
-				System.exit(1);
+				throw new IllegalArgumentException(
+						"Dimension of pretrained vectors does not match args -dim option, pretrain dim is " + dim
+								+ ", args dim is " + args_.dim);
 			}
 
 			mat = new Matrix(n, dim);
@@ -597,7 +602,9 @@ public class FastText {
 		long t0 = System.currentTimeMillis();
 		threadCount = args_.thread;
 		for (int i = 0; i < args_.thread; i++) {
-			new TrainThread(this, i).start();
+			Thread t = new TrainThread(this, i);
+			t.setUncaughtExceptionHandler(trainThreadExcpetionHandler);
+			t.start();
 		}
 
 		synchronized (this) {
@@ -611,14 +618,22 @@ public class FastText {
 
 		model_ = new Model(input_, output_, args_, 0);
 
-		long trainTime = (System.currentTimeMillis() - t0) / 1000;
-		System.out.printf("\nTrain time used: %d sec\n", trainTime);
+		if (args.verbose > 1) {
+			long trainTime = (System.currentTimeMillis() - t0) / 1000;
+			System.out.printf("\nTrain time used: %d sec\n", trainTime);
+		}
 
 		saveModel();
 		if (args_.model != model_name.sup) {
 			saveVectors();
 		}
 	}
+
+	protected Thread.UncaughtExceptionHandler trainThreadExcpetionHandler = new Thread.UncaughtExceptionHandler() {
+		public void uncaughtException(Thread th, Throwable ex) {
+			ex.printStackTrace();
+		}
+	};
 
 	public Args getArgs() {
 		return args_;
