@@ -201,7 +201,7 @@ public class Model {
 			return;
 		}
 
-		float f = sigmoid(wo_.dotRow(hidden_, node - osz_));
+		float f = sigmoid(wo_.dotRow(hidden, node - osz_));
 		dfs(k, tree.get(node).left, score + log(1.0f - f), heap, hidden);
 		dfs(k, tree.get(node).right, score + log(f), heap, hidden);
 	}
