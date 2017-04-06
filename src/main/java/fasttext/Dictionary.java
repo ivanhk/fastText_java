@@ -11,6 +11,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.math.BigInteger;
 
 import fasttext.Args.model_name;
 import fasttext.io.BufferedLineReader;
@@ -342,10 +343,13 @@ public class Dictionary {
 		}
 		int line_size = line.size();
 		for (int i = 0; i < line_size; i++) {
-			long h = (long) line.get(i);
+			BigInteger h = BigInteger.valueOf(line.get(i));
+			BigInteger r = BigInteger.valueOf(116049371l);
+			BigInteger b = BigInteger.valueOf(args_.bucket);
+
 			for (int j = i + 1; j < line_size && j < i + n; j++) {
-				h = (h * 116049371l + line.get(j)) & 0xffffffffl;
-				line.add(nwords_ + (int) (h % args_.bucket));
+				h = h.multiply(r).add(BigInteger.valueOf(line.get(j)));;
+				line.add(nwords_ + h.remainder(b).intValue());
 			}
 		}
 	}
