@@ -14,16 +14,21 @@ DATADIR=data
 mkdir -p "${RESULTDIR}"
 mkdir -p "${DATADIR}"
 
-if [ ! -f "${DATADIR}/text9" ]
+if [ ! -f "${DATADIR}/enwik9.zip" ]
 then
   wget -c http://mattmahoney.net/dc/enwik9.zip -P "${DATADIR}"
+fi
+
+
+if [ ! -f "${DATADIR}/text9" ]
+then
   unzip "${DATADIR}/enwik9.zip" -d "${DATADIR}"
   perl wikifil.pl "${DATADIR}/enwik9" > "${DATADIR}"/text9
 fi
 
 if [ ! -f "${DATADIR}/rw/rw.txt" ]
 then
-  wget -c http://stanford.edu/~lmthang/morphoNLM/rw.zip -P "${DATADIR}"
+  wget -c http://www-nlp.stanford.edu/~lmthang/morphoNLM/rw.zip -P "${DATADIR}"
   unzip "${DATADIR}/rw.zip" -d "${DATADIR}"
 fi
 
