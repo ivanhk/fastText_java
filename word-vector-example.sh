@@ -20,6 +20,13 @@ then
 fi
 
 
+if [ ! -f "${DATADIR}/text9" ]
+then
+  unzip "${DATADIR}/enwik9.zip" -d "${DATADIR}"
+  perl wikifil.pl "${DATADIR}/enwik9" > "${DATADIR}"/text9
+fi
+
+
 
 if [ ! -f "${DATADIR}/rw/rw.txt" ]
 then
