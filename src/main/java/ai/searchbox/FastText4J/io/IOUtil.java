@@ -1,4 +1,4 @@
-package fasttext;
+package ai.searchbox.FastText4J.io;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,11 +12,8 @@ import java.nio.ByteOrder;
  *
  */
 public class IOUtil {
-
-	public IOUtil() {
-	}
-
 	private int string_buf_size_ = 128;
+	private byte[] bool_bytes_ = new byte[1];
 	private byte[] int_bytes_ = new byte[4];
 	private byte[] long_bytes_ = new byte[8];
 	private byte[] float_bytes_ = new byte[4];
@@ -25,6 +22,8 @@ public class IOUtil {
 	private StringBuilder stringBuilder_ = new StringBuilder();
 	private ByteBuffer float_array_bytebuffer_ = null;
 	private byte[] float_array_bytes_ = null;
+
+	public IOUtil() {}
 
 	public void setStringBufferSize(int size) {
 		string_buf_size_ = size;
@@ -36,8 +35,20 @@ public class IOUtil {
 		float_array_bytes_ = new byte[itemSize * 4];
 	}
 
-	public int readByte(InputStream is) throws IOException {
-		return is.read() & 0xFF;
+	public byte readByte(InputStream is) throws IOException {
+		return (byte) is.read();
+	}
+
+	public int readByteAsInt(InputStream is) throws IOException {
+		return readByte(is) & 0xFF;
+	}
+
+	public boolean readBool(InputStream is) throws IOException {
+		// is.read(bool_bytes_);
+		//return bool_bytes_[0]!=0;
+
+		int ch = readByte(is);
+		return (ch != 0);
 	}
 
 	public int readInt(InputStream is) throws IOException {
@@ -55,8 +66,10 @@ public class IOUtil {
 	}
 
 	public long getLong(byte[] b) {
-		return (b[0] & 0xFFL) << 0 | (b[1] & 0xFFL) << 8 | (b[2] & 0xFFL) << 16 | (b[3] & 0xFFL) << 24
-				| (b[4] & 0xFFL) << 32 | (b[5] & 0xFFL) << 40 | (b[6] & 0xFFL) << 48 | (b[7] & 0xFFL) << 56;
+		return (b[0] & 0xFFL) << 0 | (b[1] & 0xFFL) << 8
+				| (b[2] & 0xFFL) << 16 | (b[3] & 0xFFL) << 24
+				| (b[4] & 0xFFL) << 32 | (b[5] & 0xFFL) << 40
+				| (b[6] & 0xFFL) << 48 | (b[7] & 0xFFL) << 56;
 	}
 
 	public float readFloat(InputStream is) throws IOException {
@@ -104,8 +117,8 @@ public class IOUtil {
 		return stringBuilder_.toString();
 	}
 
-	public int intToByte(int i) {
-		return (i & 0xFF);
+	public byte intToByte(int i) {
+		return (byte)(i & 0xFF);
 	}
 
 	public byte[] intToByteArray(int i) {
@@ -143,4 +156,7 @@ public class IOUtil {
 		return longToByteArray(Double.doubleToRawLongBits(d));
 	}
 
+	public byte[] booleanToByteArray(boolean b) {
+		return new byte[]{(byte) (b?1:0)};
+	}
 }

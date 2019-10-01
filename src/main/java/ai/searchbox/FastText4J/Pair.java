@@ -1,4 +1,4 @@
-package fasttext;
+package ai.searchbox.FastText4J;
 
 public class Pair<K, V> {
 

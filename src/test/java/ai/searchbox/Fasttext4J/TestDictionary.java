@@ -1,10 +1,12 @@
-package fasttext;
-
-import static org.junit.Assert.*;
+package ai.searchbox.Fasttext4J;
 
 import java.util.Map;
 
+import ai.searchbox.FastText4J.Args;
+import ai.searchbox.FastText4J.Dictionary;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class TestDictionary {
 
@@ -29,6 +31,7 @@ public class TestDictionary {
 		dictionary.add(",");
 		dictionary.add("is");
 		dictionary.add("is");
+
 		String w = "";
 		dictionary.add(w);
 		dictionary.add(w);

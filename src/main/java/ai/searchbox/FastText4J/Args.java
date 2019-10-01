@@ -1,56 +1,12 @@
-package fasttext;
+package ai.searchbox.FastText4J;
+
+import ai.searchbox.FastText4J.io.IOUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
 public class Args {
-
-	public enum model_name {
-		cbow(1), sg(2), sup(3);
-
-		private int value;
-
-		private model_name(int value) {
-			this.value = value;
-		}
-
-		public int getValue() {
-			return this.value;
-		}
-
-		public static model_name fromValue(int value) throws IllegalArgumentException {
-			try {
-				value -= 1;
-				return model_name.values()[value];
-			} catch (ArrayIndexOutOfBoundsException e) {
-				throw new IllegalArgumentException("Unknown model_name enum value :" + value);
-			}
-		}
-	}
-
-	public enum loss_name {
-		hs(1), ns(2), softmax(3);
-		private int value;
-
-		private loss_name(int value) {
-			this.value = value;
-		}
-
-		public int getValue() {
-			return this.value;
-		}
-
-		public static loss_name fromValue(int value) throws IllegalArgumentException {
-			try {
-				value -= 1;
-				return loss_name.values()[value];
-			} catch (ArrayIndexOutOfBoundsException e) {
-				throw new IllegalArgumentException("Unknown loss_name enum value :" + value);
-			}
-		}
-	}
-
 	public String input;
 	public String output;
 	public String test;
@@ -63,8 +19,8 @@ public class Args {
 	public int minCountLabel = 0;
 	public int neg = 5;
 	public int wordNgrams = 1;
-	public loss_name loss = loss_name.ns;
-	public model_name model = model_name.sg;
+	public LossType loss = LossType.ns;
+	public ModelType model = ModelType.sg;
 	public int bucket = 2000000;
 	public int minn = 3;
 	public int maxn = 6;
@@ -124,8 +80,8 @@ public class Args {
 		minCount = ioutil.readInt(input);
 		neg = ioutil.readInt(input);
 		wordNgrams = ioutil.readInt(input);
-		loss = loss_name.fromValue(ioutil.readInt(input));
-		model = model_name.fromValue(ioutil.readInt(input));
+		loss = LossType.fromValue(ioutil.readInt(input));
+		model = ModelType.fromValue(ioutil.readInt(input));
 		bucket = ioutil.readInt(input);
 		minn = ioutil.readInt(input);
 		maxn = ioutil.readInt(input);
@@ -135,16 +91,24 @@ public class Args {
 
 	public void parseArgs(String[] args) {
 		String command = args[0];
+
 		if ("supervised".equalsIgnoreCase(command)) {
-			model = model_name.sup;
-			loss = loss_name.softmax;
+			model = ModelType.sup;
+			loss = LossType.softmax;
 			minCount = 1;
 			minn = 0;
 			maxn = 0;
 			lr = 0.1;
-		} else if ("cbow".equalsIgnoreCase(command)) {
-			model = model_name.cbow;
 		}
+
+		if ("cbow".equalsIgnoreCase(command)) {
+			model = ModelType.cbow;
+		}
+
+		if ("skipgram".equalsIgnoreCase(command)) {
+			model = ModelType.sg;
+		}
+
 		int ai = 1;
 		while (ai < args.length) {
 			if (args[ai].charAt(0) != '-') {
@@ -152,6 +116,7 @@ public class Args {
 				printHelp();
 				System.exit(1);
 			}
+
 			if ("-h".equals(args[ai])) {
 				System.out.println("Here is the help! Usage:");
 				printHelp();
@@ -182,11 +147,11 @@ public class Args {
 				wordNgrams = Integer.parseInt(args[ai + 1]);
 			} else if ("-loss".equals(args[ai])) {
 				if ("hs".equalsIgnoreCase(args[ai + 1])) {
-					loss = loss_name.hs;
+					loss = LossType.hs;
 				} else if ("ns".equalsIgnoreCase(args[ai + 1])) {
-					loss = loss_name.ns;
+					loss = LossType.ns;
 				} else if ("softmax".equalsIgnoreCase(args[ai + 1])) {
-					loss = loss_name.softmax;
+					loss = LossType.softmax;
 				} else {
 					System.out.println("Unknown loss: " + args[ai + 1]);
 					printHelp();
@@ -276,4 +241,52 @@ public class Args {
 		return builder.toString();
 	}
 
+
+
+
+	public enum ModelType {
+		cbow(1), sg(2), sup(3);
+
+		private int value;
+
+		public int getValue() {
+			return this.value;
+		}
+
+		public static ModelType fromValue(int value) throws IllegalArgumentException {
+			try {
+				value -= 1;
+				return ModelType.values()[value];
+			} catch (ArrayIndexOutOfBoundsException e) {
+				throw new IllegalArgumentException("Unknown model_name enum value :" + value);
+			}
+		}
+
+		private ModelType(int value) {
+			this.value = value;
+		}
+	}
+
+	public enum LossType {
+		hs(1), ns(2), softmax(3);
+
+		private int value;
+
+		public int getValue() {
+			return this.value;
+		}
+
+		public static LossType fromValue(int value) throws IllegalArgumentException {
+			try {
+				value -= 1;
+				return LossType.values()[value];
+			} catch (ArrayIndexOutOfBoundsException e) {
+				throw new IllegalArgumentException("Unknown loss_name enum value :" + value);
+			}
+		}
+
+		private LossType(int value) {
+			this.value = value;
+		}
+	}
 }

@@ -1,4 +1,4 @@
-package fasttext;
+package ai.searchbox.FastText4J;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -6,8 +6,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
-import fasttext.Args.loss_name;
-import fasttext.Args.model_name;
+import ai.searchbox.FastText4J.Args.LossType;
+import ai.searchbox.FastText4J.Args.ModelType;
+import ai.searchbox.FastText4J.math.Matrix;
+import ai.searchbox.FastText4J.math.MatrixQ;
+import ai.searchbox.FastText4J.math.Vector;
 
 public class Model {
 
@@ -17,14 +20,6 @@ public class Model {
 
 	static final int NEGATIVE_TABLE_SIZE = 10000000;
 
-	public class Node {
-		int parent;
-		int left;
-		int right;
-		long count;
-		boolean binary;
-	}
-
 	private Matrix wi_; // input
 	private Matrix wo_; // output
 	private Args args_;
@@ -32,16 +27,20 @@ public class Model {
 	private Vector output_;
 	private Vector grad_;
 	private int hsz_; // dim
+
 	@SuppressWarnings("unused")
 	private int isz_; // input vocabSize
+
 	private int osz_; // output vocabSize
 	private float loss_;
 	private long nexamples_;
 	private float[] t_sigmoid;
 	private float[] t_log;
+
 	// used for negative sampling:
 	private List<Integer> negatives;
 	private int negpos;
+
 	// used for hierarchical softmax:
 	private List<List<Integer>> paths;
 	private List<List<Boolean>> codes;
@@ -49,21 +48,29 @@ public class Model {
 
 	public transient Random rng;
 
-	public Model(Matrix wi, Matrix wo, Args args, int seed) {
-		hidden_ = new Vector(args.dim);
-		output_ = new Vector(wo.m_);
-		grad_ = new Vector(args.dim);
-		rng = new Random((long) seed);
-
-		wi_ = wi;
-		wo_ = wo;
-		args_ = args;
-		isz_ = wi.m_;
-		osz_ = wo.m_;
-		hsz_ = args.dim;
+	public Model(Matrix wi, Matrix wo, boolean quant, Args args, int seed) {
 		negpos = 0;
 		loss_ = 0.0f;
 		nexamples_ = 1l;
+
+		wi_ = wi;
+		wo_ = wo;
+		if(quant) {
+			wi_ = (MatrixQ) wi;
+		}
+
+		args_ = args;
+
+
+		isz_ = wi.m;
+		osz_ = wo.m;
+		hsz_ = args.dim;
+
+		hidden_ = new Vector(args.dim);
+		output_ = new Vector(wo.m);
+		grad_ = new Vector(args.dim);
+		rng = new Random((long) seed);
+
 		initSigmoid();
 		initLog();
 	}
@@ -73,16 +80,18 @@ public class Model {
 		float alpha = lr * ((label ? 1.0f : 0.0f) - score);
 		grad_.addRow(wo_, target, alpha);
 		wo_.addRow(hidden_, target, alpha);
+
 		if (label) {
 			return -log(score);
-		} else {
-			return -log(1.0f - score);
 		}
+
+		return -log(1.0f - score);
 	}
 
 	public float negativeSampling(int target, float lr) {
 		float loss = 0.0f;
 		grad_.zero();
+
 		for (int n = 0; n <= args_.neg; n++) {
 			if (n == 0) {
 				loss += binaryLogistic(target, true, lr);
@@ -90,18 +99,37 @@ public class Model {
 				loss += binaryLogistic(getNegative(target), false, lr);
 			}
 		}
+
 		return loss;
 	}
 
 	public float hierarchicalSoftmax(int target, float lr) {
 		float loss = 0.0f;
 		grad_.zero();
+
 		final List<Boolean> binaryCode = codes.get(target);
 		final List<Integer> pathToRoot = paths.get(target);
 		for (int i = 0; i < pathToRoot.size(); i++) {
 			loss += binaryLogistic(pathToRoot.get(i), binaryCode.get(i), lr);
 		}
+
 		return loss;
+	}
+
+	public float softmax(int target, float lr) {
+		grad_.zero();
+		computeOutputSoftmax();
+		for (int i = 0; i < osz_; i++) {
+			float label = (i == target) ? 1.0f : 0.0f;
+			float alpha = lr * (label - output_.get(i));
+			grad_.addRow(wo_, i, alpha);
+			wo_.addRow(hidden_, i, alpha);
+		}
+		return -log(output_.get(target));
+	}
+
+	public void computeOutputSoftmax() {
+		computeOutputSoftmax(hidden_, output_);
 	}
 
 	public void computeOutputSoftmax(Vector hidden, Vector output) {
@@ -119,22 +147,6 @@ public class Model {
 		}
 	}
 
-	public void computeOutputSoftmax() {
-		computeOutputSoftmax(hidden_, output_);
-	}
-
-	public float softmax(int target, float lr) {
-		grad_.zero();
-		computeOutputSoftmax();
-		for (int i = 0; i < osz_; i++) {
-			float label = (i == target) ? 1.0f : 0.0f;
-			float alpha = lr * (label - output_.get(i));
-			grad_.addRow(wo_, i, alpha);
-			wo_.addRow(hidden_, i, alpha);
-		}
-		return -log(output_.get(target));
-	}
-
 	public void computeHidden(final List<Integer> input, Vector hidden) {
 		Utils.checkArgument(hidden.size() == hsz_);
 		hidden.zero();
@@ -144,14 +156,6 @@ public class Model {
 		hidden.mul(1.0f / input.size());
 	}
 
-	private Comparator<Pair<Float, Integer>> comparePairs = new Comparator<Pair<Float, Integer>>() {
-
-		@Override
-		public int compare(Pair<Float, Integer> o1, Pair<Float, Integer> o2) {
-			return o2.getKey().compareTo(o1.getKey());
-		}
-	};
-
 	public void predict(final List<Integer> input, int k, List<Pair<Float, Integer>> heap, Vector hidden,
 			Vector output) {
 		Utils.checkArgument(k > 0);
@@ -159,7 +163,7 @@ public class Model {
 			((ArrayList<Pair<Float, Integer>>) heap).ensureCapacity(k + 1);
 		}
 		computeHidden(input, hidden);
-		if (args_.loss == loss_name.hs) {
+		if (args_.loss == LossType.hs) {
 			dfs(k, 2 * osz_ - 2, 0.0f, heap, hidden);
 		} else {
 			findKBest(k, heap, hidden, output);
@@ -214,16 +218,16 @@ public class Model {
 		}
 		computeHidden(input, hidden_);
 
-		if (args_.loss == loss_name.ns) {
+		if (args_.loss == LossType.ns) {
 			loss_ += negativeSampling(target, lr);
-		} else if (args_.loss == loss_name.hs) {
+		} else if (args_.loss == LossType.hs) {
 			loss_ += hierarchicalSoftmax(target, lr);
 		} else {
 			loss_ += softmax(target, lr);
 		}
 		nexamples_ += 1;
 
-		if (args_.model == model_name.sup) {
+		if (args_.model == ModelType.sup) {
 			grad_.mul(1.0f / input.size());
 		}
 		for (Integer it : input) {
@@ -233,10 +237,11 @@ public class Model {
 
 	public void setTargetCounts(final List<Long> counts) {
 		Utils.checkArgument(counts.size() == osz_);
-		if (args_.loss == loss_name.ns) {
+
+		if (args_.loss == LossType.ns) {
 			initTableNegatives(counts);
 		}
-		if (args_.loss == loss_name.hs) {
+		if (args_.loss == LossType.hs) {
 			buildTree(counts);
 		}
 	}
@@ -318,22 +323,6 @@ public class Model {
 		return loss_ / nexamples_;
 	}
 
-	private void initSigmoid() {
-		t_sigmoid = new float[SIGMOID_TABLE_SIZE + 1];
-		for (int i = 0; i < SIGMOID_TABLE_SIZE + 1; i++) {
-			float x = (float) (i * 2 * MAX_SIGMOID) / SIGMOID_TABLE_SIZE - MAX_SIGMOID;
-			t_sigmoid[i] = (float) (1.0f / (1.0f + Math.exp(-x)));
-		}
-	}
-
-	private void initLog() {
-		t_log = new float[LOG_TABLE_SIZE + 1];
-		for (int i = 0; i < LOG_TABLE_SIZE + 1; i++) {
-			float x = (float) (((float) (i) + 1e-5f) / LOG_TABLE_SIZE);
-			t_log[i] = (float) Math.log(x);
-		}
-	}
-
 	public float log(float x) {
 		if (x > 1.0f) {
 			return 0.0f;
@@ -351,5 +340,39 @@ public class Model {
 			int i = (int) ((x + MAX_SIGMOID) * SIGMOID_TABLE_SIZE / MAX_SIGMOID / 2);
 			return t_sigmoid[i];
 		}
+	}
+
+
+	private void initSigmoid() {
+		t_sigmoid = new float[SIGMOID_TABLE_SIZE + 1];
+		for (int i = 0; i < SIGMOID_TABLE_SIZE + 1; i++) {
+			float x = (float) (i * 2 * MAX_SIGMOID) / SIGMOID_TABLE_SIZE - MAX_SIGMOID;
+			t_sigmoid[i] = (float) (1.0f / (1.0f + Math.exp(-x)));
+		}
+	}
+
+	private void initLog() {
+		t_log = new float[LOG_TABLE_SIZE + 1];
+		for (int i = 0; i < LOG_TABLE_SIZE + 1; i++) {
+			float x = (float) (((float) (i) + 1e-5f) / LOG_TABLE_SIZE);
+			t_log[i] = (float) Math.log(x);
+		}
+	}
+
+	private Comparator<Pair<Float, Integer>> comparePairs = new Comparator<Pair<Float, Integer>>() {
+		@Override
+		public int compare(Pair<Float, Integer> o1, Pair<Float, Integer> o2) {
+			return o2.getKey().compareTo(o1.getKey());
+		}
+	};
+
+
+
+	public class Node {
+		int parent;
+		int left;
+		int right;
+		long count;
+		boolean binary;
 	}
 }

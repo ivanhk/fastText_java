@@ -1,4 +1,4 @@
-package fasttext;
+package ai.searchbox.FastText4J;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -13,15 +13,6 @@ import java.util.RandomAccess;
 
 public class Utils {
 
-	/**
-	 * Ensures the truth of an expression involving one or more parameters to
-	 * the calling method.
-	 *
-	 * @param expression
-	 *            a boolean expression
-	 * @throws IllegalArgumentException
-	 *             if {@code expression} is false
-	 */
 	public static void checkArgument(boolean expression) {
 		if (!expression) {
 			throw new IllegalArgumentException();
@@ -81,13 +72,6 @@ public class Utils {
 		}
 	}
 
-	/**
-	 * 
-	 * @param br
-	 * @param pos
-	 *            line numbers start from 1
-	 * @throws IOException
-	 */
 	public static void seekLine(BufferedReader br, long pos) throws IOException {
 		// br.reset();
 		String line;
@@ -102,7 +86,6 @@ public class Utils {
 
 	private static final int SHUFFLE_THRESHOLD = 5;
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static void shuffle(List<?> list, Random rnd) {
 		int size = list.size();
 		if (size < SHUFFLE_THRESHOLD || list instanceof RandomAccess) {
@@ -127,16 +110,12 @@ public class Utils {
 		}
 	}
 
-	/**
-	 * Swaps the two specified elements in the specified array.
-	 */
 	public static void swap(Object[] arr, int i, int j) {
 		Object tmp = arr[i];
 		arr[i] = arr[j];
 		arr[j] = tmp;
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public static void swap(List<?> list, int i, int j) {
 		// instead of using a raw type here, it's possible to capture
 		// the wildcard but it will require a call to a supplementary

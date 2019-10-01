@@ -14,16 +14,16 @@ DATADIR=data
 mkdir -p "${RESULTDIR}"
 mkdir -p "${DATADIR}"
 
-if [ ! -f "${DATADIR}/text9" ]
+if [ ! -f "${DATADIR}/enwik9.zip" ]
 then
   wget -c http://mattmahoney.net/dc/enwik9.zip -P "${DATADIR}"
-  unzip "${DATADIR}/enwik9.zip" -d "${DATADIR}"
-  perl wikifil.pl "${DATADIR}/enwik9" > "${DATADIR}"/text9
 fi
+
+
 
 if [ ! -f "${DATADIR}/rw/rw.txt" ]
 then
-  wget -c http://stanford.edu/~lmthang/morphoNLM/rw.zip -P "${DATADIR}"
+  wget -c http://www-nlp.stanford.edu/~lmthang/morphoNLM/rw.zip -P "${DATADIR}"
   unzip "${DATADIR}/rw.zip" -d "${DATADIR}"
 fi
 
@@ -31,8 +31,8 @@ mvn package
 
 JAR=./target/fasttext-0.0.1-SNAPSHOT-jar-with-dependencies.jar
 
-java -jar ${JAR} skipgram -input "${DATADIR}"/text9 -output "${RESULTDIR}"/text9 -lr 0.025 -dim 100 \
-  -ws 5 -epoch 1 -minCount 5 -neg 5 -loss ns -bucket 2000000 \
+java -Xmx8G -jar ${JAR} skipgram -input "${DATADIR}"/text9 -output "${RESULTDIR}"/text9 -lr 0.025 -dim 100 \
+  -ws 5 -epoch 1 -minCount 5 -neg 5 -loss ns -bucket 200000 \
   -minn 3 -maxn 6 -thread 4 -t 1e-4 -lrUpdateRate 100
 
 cut -f 1,2 "${DATADIR}"/rw/rw.txt | awk '{print tolower($0)}' | tr '\t' '\n' > "${DATADIR}"/queries.txt

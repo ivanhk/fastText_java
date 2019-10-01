@@ -2,18 +2,18 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>fasttext</groupId>
-	<artifactId>fasttext</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<groupId>ai.searchbox</groupId>
+	<artifactId>FastText4J</artifactId>
+	<version>0.9.0</version>
 	<packaging>jar</packaging>
 
-	<name>fasttext</name>
+	<name>ai.searchbox.FastText4J</name>
 	<url>http://maven.apache.org</url>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.source>1.6</maven.compiler.source>
-		<maven.compiler.target>1.6</maven.compiler.target>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
 	</properties>
 
 	<dependencies>
@@ -22,6 +22,11 @@
 			<artifactId>junit</artifactId>
 			<version>4.12</version>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>1.2.17</version>
 		</dependency>
 	</dependencies>
 
@@ -35,11 +40,12 @@
 						<extdirs>lib</extdirs>
 					</compilerArguments>
 					<compilerVersion>1.6</compilerVersion>
-					<source>1.6</source>
-					<target>1.6</target>
+					<source>1.8</source>
+					<target>1.8</target>
 				</configuration>
 				<version>3.3</version>
 			</plugin>
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-resources-plugin</artifactId>
@@ -48,6 +54,7 @@
 				</configuration>
 				<version>3.0.1</version>
 			</plugin>
+
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
@@ -71,7 +78,7 @@
 					</descriptorRefs>
 					<archive>
 						<manifest>
-							<mainClass>fasttext.Main</mainClass>
+							<mainClass>ai.searchbox.FastText4J.Main</mainClass>
 						</manifest>
 					</archive>
 				</configuration>

@@ -1,4 +1,4 @@
-package fasttext.io;
+package ai.searchbox.FastText4J.io;
 
 import java.io.File;
 import java.io.IOException;

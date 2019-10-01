@@ -1,4 +1,4 @@
-package fasttext.io;
+package ai.searchbox.FastText4J.io;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -46,13 +46,12 @@ public class BufferedLineReader extends LineReader {
 
 	@Override
 	public String readLine() throws IOException {
-		synchronized (lock) {
+
 			String lineString = br_.readLine();
 			while (lineString != null && (lineString.isEmpty() || lineString.startsWith("#"))) {
 				lineString = br_.readLine();
 			}
 			return lineString;
-		}
 	}
 
 	@Override
